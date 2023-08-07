@@ -2,5 +2,11 @@
 name = "cloud-detect"
 version = "0.1.0"
 edition = "2021"
+authors = ["Nikhil Prabhu <nikhilprabhu98@gmail.com>"]
+description = "Detect a host's cloud service provider"
+repository = "https://github.com/nikhil-prabhu/cloud-detect"
+license = "GPL-3.0"
+documentation = "https://docs.rs/cloud-detect"
+keywords = ["cloud", "aws", "azure", "gcp", "hyperscaler"]
 
 [dependencies]
