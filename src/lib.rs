@@ -26,6 +26,8 @@ lazy_static! {
             GOOGLE_CLOUD_PLATFORM,
             "http://metadata.google.internal/computeMetadata/",
         );
+        map.insert(ALIBABA_CLOUD, "http://100.100.100.200/latest/");
+        map.insert(OPENSTACK, "http://169.254.169.254/openstack/");
         map
     };
 }
