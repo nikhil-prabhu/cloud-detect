@@ -13,7 +13,8 @@ pub(crate) trait Provider {
     async fn check_vendor_file() -> bool;
 }
 
-const SUPPORTED_PROVIDERS: [&str; 2] = [
+/// A list of the currently supported cloud providers.
+pub const SUPPORTED_PROVIDERS: [&str; 2] = [
     AWS::identifier(),
     Azure::identifier(),
 ];
