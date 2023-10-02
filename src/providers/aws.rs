@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use async_trait::async_trait;
 use serde::Deserialize;
 
 use crate::Provider;
@@ -21,6 +22,7 @@ struct MetadataResponse {
 
 pub(crate) struct AWS;
 
+#[async_trait]
 impl Provider for AWS {
     /// Returns the identifier string for AWS.
     fn identifier() -> &'static str {

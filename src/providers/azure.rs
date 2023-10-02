@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use async_trait::async_trait;
 use serde::Deserialize;
 
 use crate::Provider;
@@ -21,6 +22,7 @@ struct MetadataResponse {
 
 pub(crate) struct Azure;
 
+#[async_trait]
 impl Provider for Azure {
     fn identifier() -> &'static str {
         "azure"
