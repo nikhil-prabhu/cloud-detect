@@ -1,6 +1,7 @@
 ///! Detect a host's cloud service provider.
 
 use crate::providers::aws::AWS;
+use crate::providers::azure::Azure;
 
 mod providers;
 
@@ -12,6 +13,7 @@ pub(crate) trait Provider {
     async fn check_vendor_file() -> bool;
 }
 
-const SUPPORTED_PROVIDERS: [&str; 1] = [
+const SUPPORTED_PROVIDERS: [&str; 2] = [
     AWS::identifier(),
+    Azure::identifier(),
 ];
