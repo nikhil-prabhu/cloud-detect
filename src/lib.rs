@@ -16,7 +16,7 @@ pub(crate) trait Provider {
 }
 
 /// A list of the currently supported cloud providers.
-pub const SUPPORTED_PROVIDERS: [&str; 2] = [
+pub static SUPPORTED_PROVIDERS: [&str; 2] = [
     AWS::identifier(),
     Azure::identifier(),
 ];
