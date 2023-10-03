@@ -1,9 +1,6 @@
 ///! Detect a host's cloud service provider.
 use async_trait::async_trait;
-
-use crate::providers::aws::AWS;
-use crate::providers::azure::Azure;
-use crate::providers::gcp::GCP;
+use lazy_static::lazy_static;
 
 mod providers;
 
@@ -16,9 +13,11 @@ pub(crate) trait Provider {
     async fn check_vendor_file() -> bool;
 }
 
-/// A list of the currently supported cloud providers.
-pub static SUPPORTED_PROVIDERS: [&str; 3] = [
-    AWS::identifier(),
-    Azure::identifier(),
-    GCP::identifier(),
-];
+lazy_static! {
+    /// A list of the currently supported cloud providers.
+    pub static ref SUPPORTED_PROVIDERS: [&'static str; 3] = [
+        crate::providers::aws::AWS::identifier(),
+        crate::providers::azure::Azure::identifier(),
+        crate::providers::gcp::GCP::identifier(),
+    ];
+}
