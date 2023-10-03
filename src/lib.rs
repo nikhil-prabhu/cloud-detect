@@ -15,10 +15,11 @@ pub(crate) trait Provider {
 
 lazy_static! {
     /// A list of the currently supported cloud providers.
-    pub static ref SUPPORTED_PROVIDERS: [&'static str; 4] = [
+    pub static ref SUPPORTED_PROVIDERS: [&'static str; 5] = [
         crate::providers::aws::AWS::identifier(),
         crate::providers::azure::Azure::identifier(),
         crate::providers::gcp::GCP::identifier(),
         crate::providers::alibaba::Alibaba::identifier(),
+        crate::providers::openstack::OpenStack::identifier(),
     ];
 }
