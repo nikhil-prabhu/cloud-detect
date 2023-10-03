@@ -38,8 +38,10 @@ impl Provider for AWS {
     async fn check_metadata_server() -> bool {
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
-                let resp: MetadataResponse = resp.json().await.unwrap();
-                resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-")
+                return match resp.json::<MetadataResponse>().await {
+                    Ok(resp) => resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-"),
+                    Err(_) => false,
+                };
             }
             Err(_) => false,
         };
