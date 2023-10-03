@@ -3,6 +3,7 @@ use async_trait::async_trait;
 
 use crate::providers::aws::AWS;
 use crate::providers::azure::Azure;
+use crate::providers::gcp::GCP;
 
 mod providers;
 
@@ -16,7 +17,8 @@ pub(crate) trait Provider {
 }
 
 /// A list of the currently supported cloud providers.
-pub static SUPPORTED_PROVIDERS: [&str; 2] = [
+pub static SUPPORTED_PROVIDERS: [&str; 3] = [
     AWS::identifier(),
     Azure::identifier(),
+    GCP::identifier(),
 ];
