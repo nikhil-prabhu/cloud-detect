@@ -12,17 +12,17 @@ pub(crate) struct Alibaba;
 
 #[async_trait]
 impl Provider for Alibaba {
-    fn identifier() -> &'static str {
+    fn identifier(&self) -> &'static str {
         "alibaba"
     }
 
     /// Tries to identify Alibaba using all the implemented options.
-    async fn identify() -> bool {
-        Self::check_vendor_file().await || Self::check_metadata_server().await
+    async fn identify(&self) -> bool {
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify Alibaba via metadata server.
-    async fn check_metadata_server() -> bool {
+    async fn check_metadata_server(&self) -> bool {
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.text().await {
@@ -35,7 +35,7 @@ impl Provider for Alibaba {
     }
 
     /// Tries to identify Alibaba using vendor file(s).
-    async fn check_vendor_file() -> bool {
+    async fn check_vendor_file(&self) -> bool {
         let vendor_file = Path::new(VENDOR_FILE);
 
         if vendor_file.is_file() {

@@ -8,22 +8,22 @@ pub(crate) struct OpenStack;
 
 #[async_trait]
 impl Provider for OpenStack {
-    fn identifier() -> &'static str {
+    fn identifier(&self) -> &'static str {
         "openstack"
     }
 
     /// Tries to identify OpenStack using all the implemented options.
-    async fn identify() -> bool {
-        Self::check_vendor_file().await || Self::check_metadata_server().await
+    async fn identify(&self) -> bool {
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify OpenStack via metadata server.
-    async fn check_metadata_server() -> bool {
+    async fn check_metadata_server(&self) -> bool {
         reqwest::get(METADATA_URL).await.is_ok()
     }
 
     /// Tries to identify OpenStack using vendor file(s).
-    async fn check_vendor_file() -> bool {
+    async fn check_vendor_file(&self) -> bool {
         // Vendor file checking is currently not implemented (because I have no clue how to do so).
         false
     }

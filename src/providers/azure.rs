@@ -24,17 +24,17 @@ pub(crate) struct Azure;
 
 #[async_trait]
 impl Provider for Azure {
-    fn identifier() -> &'static str {
+    fn identifier(&self) -> &'static str {
         "azure"
     }
 
     /// Tries to identify Azure using all the implemented options.
-    async fn identify() -> bool {
-        Self::check_vendor_file().await || Self::check_metadata_server().await
+    async fn identify(&self) -> bool {
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify Azure via metadata server.
-    async fn check_metadata_server() -> bool {
+    async fn check_metadata_server(&self) -> bool {
         let client = reqwest::Client::new();
         let req = client.get(METADATA_URL).header("Metadata", "true");
 
@@ -48,7 +48,7 @@ impl Provider for Azure {
     }
 
     /// Tries to identify Azure using vendor file(s).
-    async fn check_vendor_file() -> bool {
+    async fn check_vendor_file(&self) -> bool {
         let vendor_file = Path::new(VENDOR_FILE);
 
         if vendor_file.is_file() {

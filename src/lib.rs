@@ -7,19 +7,19 @@ mod providers;
 /// Represents a cloud service provider.
 #[async_trait]
 pub(crate) trait Provider {
-    fn identifier() -> &'static str;
-    async fn identify() -> bool;
-    async fn check_metadata_server() -> bool;
-    async fn check_vendor_file() -> bool;
+    fn identifier(&self) -> &'static str;
+    async fn identify(&self) -> bool;
+    async fn check_metadata_server(&self) -> bool;
+    async fn check_vendor_file(&self) -> bool;
 }
 
 lazy_static! {
     /// A list of the currently supported cloud providers.
     pub static ref SUPPORTED_PROVIDERS: [&'static str; 5] = [
-        crate::providers::aws::AWS::identifier(),
-        crate::providers::azure::Azure::identifier(),
-        crate::providers::gcp::GCP::identifier(),
-        crate::providers::alibaba::Alibaba::identifier(),
-        crate::providers::openstack::OpenStack::identifier(),
+        crate::providers::aws::AWS.identifier(),
+        crate::providers::azure::Azure.identifier(),
+        crate::providers::gcp::GCP.identifier(),
+        crate::providers::alibaba::Alibaba.identifier(),
+        crate::providers::openstack::OpenStack.identifier(),
     ];
 }

@@ -25,17 +25,17 @@ pub(crate) struct AWS;
 #[async_trait]
 impl Provider for AWS {
     /// Returns the identifier string for AWS.
-    fn identifier() -> &'static str {
+    fn identifier(&self) -> &'static str {
         "aws"
     }
 
     /// Tries to identify AWS using all the implemented options.
-    async fn identify() -> bool {
-        Self::check_vendor_file().await || Self::check_metadata_server().await
+    async fn identify(&self) -> bool {
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify AWS via metadata server.
-    async fn check_metadata_server() -> bool {
+    async fn check_metadata_server(&self) -> bool {
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
@@ -48,7 +48,7 @@ impl Provider for AWS {
     }
 
     /// Tries to identify AWS using vendor file(s).
-    async fn check_vendor_file() -> bool {
+    async fn check_vendor_file(&self) -> bool {
         for vendor_file in VENDOR_FILES {
             let vendor_file = Path::new(vendor_file);
 
