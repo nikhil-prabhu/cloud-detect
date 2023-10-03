@@ -64,7 +64,9 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
         let identifier = identifiers.remove(provider).unwrap();
 
         tokio::spawn(async move {
-            identifier.identify().await.then(|| tx.send(&provider));
+            if identifier.identify().await {
+                tx.send(&provider).await.unwrap();
+            }
         });
     }
 
