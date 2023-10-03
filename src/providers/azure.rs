@@ -38,7 +38,7 @@ impl Provider for Azure {
         let client = reqwest::Client::new();
         let req = client.get(METADATA_URL).header("Metadata", "true");
 
-        return match req.send() {
+        return match req.send().await {
             Ok(resp) => {
                 let resp: MetadataResponse = resp.json().await.unwrap();
                 resp.compute.vm_id.len() > 0
