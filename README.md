@@ -4,6 +4,8 @@
 [![crates-badge](https://img.shields.io/crates/v/cloud-detect.svg)](https://crates.io/crates/cloud-detect)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+![cloud-detect: logo](assets/logo.png)
+
 Rust library that detects a host's cloud service provider.
 
 This library is heavily inspired by the Python [cloud-detect](https://github.com/dgzlopes/cloud-detect)
