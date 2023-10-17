@@ -11,6 +11,7 @@ const VENDOR_FILES: [&str; 2] = [
     "/sys/class/dmi/id/product_version",
     "/sys/class/dmi/id/bios_vendor",
 ];
+pub const IDENTIFIER: &str = "aws";
 
 #[derive(Deserialize)]
 struct MetadataResponse {
@@ -24,11 +25,6 @@ pub(crate) struct AWS;
 
 #[async_trait]
 impl Provider for AWS {
-    /// Returns the identifier string for AWS.
-    fn identifier(&self) -> &'static str {
-        "aws"
-    }
-
     /// Tries to identify AWS using all the implemented options.
     async fn identify(&self) -> bool {
         self.check_vendor_file().await || self.check_metadata_server().await
@@ -39,7 +35,9 @@ impl Provider for AWS {
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
-                    Ok(resp) => resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-"),
+                    Ok(resp) => {
+                        resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-")
+                    }
                     Err(_) => false,
                 };
             }

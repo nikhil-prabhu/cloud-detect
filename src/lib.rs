@@ -1,18 +1,12 @@
 ///! Detect a host's cloud service provider.
-
 use std::collections::HashMap;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use lazy_static::lazy_static;
 use tokio::sync::mpsc;
 use tokio::time::timeout as tokio_timeout;
 
-use crate::providers::alibaba::Alibaba;
-use crate::providers::aws::AWS;
-use crate::providers::azure::Azure;
-use crate::providers::gcp::GCP;
-use crate::providers::openstack::OpenStack;
+use crate::providers::{alibaba, aws, azure, gcp, openstack};
 
 mod providers;
 
@@ -21,22 +15,19 @@ const UNKNOWN_PROVIDER: &str = "unknown";
 /// Represents a cloud service provider.
 #[async_trait]
 pub(crate) trait Provider {
-    fn identifier(&self) -> &'static str;
     async fn identify(&self) -> bool;
     async fn check_metadata_server(&self) -> bool;
     async fn check_vendor_file(&self) -> bool;
 }
 
-lazy_static! {
-    /// A list of the currently supported cloud providers.
-    pub static ref SUPPORTED_PROVIDERS: [&'static str; 5] = [
-        crate::providers::aws::AWS.identifier(),
-        crate::providers::azure::Azure.identifier(),
-        crate::providers::gcp::GCP.identifier(),
-        crate::providers::alibaba::Alibaba.identifier(),
-        crate::providers::openstack::OpenStack.identifier(),
-    ];
-}
+/// The list of currently supported providers.
+const SUPPORTED_PROVIDERS: [&str; 5] = [
+    aws::IDENTIFIER,
+    azure::IDENTIFIER,
+    gcp::IDENTIFIER,
+    alibaba::IDENTIFIER,
+    openstack::IDENTIFIER,
+];
 
 /// Detects the host's cloud provider.
 ///
@@ -52,11 +43,11 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
     let timeout = Duration::from_secs(timeout.unwrap_or(5));
     let (tx, mut rx) = mpsc::channel::<&str>(1);
     let mut identifiers: HashMap<&str, P> = HashMap::from([
-        (AWS.identifier(), Box::new(AWS) as P),
-        (Azure.identifier(), Box::new(Azure) as P),
-        (GCP.identifier(), Box::new(GCP) as P),
-        (Alibaba.identifier(), Box::new(Alibaba) as P),
-        (OpenStack.identifier(), Box::new(OpenStack) as P),
+        (aws::IDENTIFIER, Box::new(aws::AWS) as P),
+        (azure::IDENTIFIER, Box::new(azure::Azure) as P),
+        (gcp::IDENTIFIER, Box::new(gcp::GCP) as P),
+        (alibaba::IDENTIFIER, Box::new(alibaba::Alibaba) as P),
+        (openstack::IDENTIFIER, Box::new(openstack::OpenStack) as P),
     ]);
 
     for provider in SUPPORTED_PROVIDERS.iter() {

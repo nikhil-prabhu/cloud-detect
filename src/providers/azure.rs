@@ -8,6 +8,7 @@ use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/metadata/instance?api-version=2017-12-01";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
+pub const IDENTIFIER: &str = "azure";
 
 #[derive(Deserialize)]
 struct Compute {
@@ -24,10 +25,6 @@ pub(crate) struct Azure;
 
 #[async_trait]
 impl Provider for Azure {
-    fn identifier(&self) -> &'static str {
-        "azure"
-    }
-
     /// Tries to identify Azure using all the implemented options.
     async fn identify(&self) -> bool {
         self.check_vendor_file().await || self.check_metadata_server().await

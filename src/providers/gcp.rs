@@ -7,15 +7,12 @@ use crate::Provider;
 
 const METADATA_URL: &str = "http://metadata.google.internal/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
+pub const IDENTIFIER: &str = "gcp";
 
 pub(crate) struct GCP;
 
 #[async_trait]
 impl Provider for GCP {
-    fn identifier(&self) -> &'static str {
-        "gcp"
-    }
-
     /// Tries to identify GCP using all the implemented options.
     async fn identify(&self) -> bool {
         self.check_vendor_file().await || self.check_metadata_server().await

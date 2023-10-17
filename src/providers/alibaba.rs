@@ -5,17 +5,15 @@ use async_trait::async_trait;
 
 use crate::Provider;
 
-const METADATA_URL: &str = "http://100.100.100.200/latest/meta-data/latest/meta-data/instance/virtualization-solution";
+const METADATA_URL: &str =
+    "http://100.100.100.200/latest/meta-data/latest/meta-data/instance/virtualization-solution";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
+pub const IDENTIFIER: &str = "alibaba";
 
 pub(crate) struct Alibaba;
 
 #[async_trait]
 impl Provider for Alibaba {
-    fn identifier(&self) -> &'static str {
-        "alibaba"
-    }
-
     /// Tries to identify Alibaba using all the implemented options.
     async fn identify(&self) -> bool {
         self.check_vendor_file().await || self.check_metadata_server().await
