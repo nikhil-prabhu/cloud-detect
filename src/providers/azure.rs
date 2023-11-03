@@ -42,8 +42,13 @@ impl Provider for Azure {
 
         return match req.send().await {
             Ok(resp) => {
-                let resp: MetadataResponse = resp.json().await.unwrap();
-                resp.compute.vm_id.len() > 0
+                return match resp.json::<MetadataResponse>().await {
+                    Ok(resp) => resp.compute.vm_id.len() > 0,
+                    Err(err) => {
+                        error!("Error reading response: {:?}", err);
+                        false
+                    }
+                }
             }
             Err(err) => {
                 error!("Error making request: {:?}", err);
