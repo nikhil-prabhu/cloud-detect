@@ -3,6 +3,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use serde::Deserialize;
+use tracing::{debug, error, info, Level};
 
 use crate::Provider;
 
@@ -27,33 +28,54 @@ pub(crate) struct AWS;
 impl Provider for AWS {
     /// Tries to identify AWS using all the implemented options.
     async fn identify(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "identify");
+        let _enter = span.enter();
+
+        info!("Attempting to identify {}", IDENTIFIER);
         self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify AWS via metadata server.
     async fn check_metadata_server(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "check_metadata_server");
+        let _enter = span.enter();
+
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, METADATA_URL);
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
                     Ok(resp) => {
                         resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-")
                     }
-                    Err(_) => false,
+                    Err(err) => {
+                        error!("Error reading response: {:?}", err);
+                        false
+                    },
                 };
             }
-            Err(_) => false,
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                false
+            },
         };
     }
 
     /// Tries to identify AWS using vendor file(s).
     async fn check_vendor_file(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "check_vendor_file");
+        let _enter = span.enter();
+
         for vendor_file in VENDOR_FILES {
+            debug!("Checking {} vendor file: {}", IDENTIFIER, vendor_file);
             let vendor_file = Path::new(vendor_file);
 
             if vendor_file.is_file() {
                 return match fs::read_to_string(vendor_file) {
                     Ok(content) => content.to_lowercase().contains("amazon"),
-                    Err(_) => false,
+                    Err(err) => {
+                        error!("Error reading file: {:?}", err);
+                        false
+                    },
                 };
             }
         }

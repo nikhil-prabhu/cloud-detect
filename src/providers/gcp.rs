@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
+use tracing::{debug, error, info, Level};
 
 use crate::Provider;
 
@@ -15,11 +16,19 @@ pub(crate) struct GCP;
 impl Provider for GCP {
     /// Tries to identify GCP using all the implemented options.
     async fn identify(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "identify");
+        let _enter = span.enter();
+
+        info!("Attempting to identify {}", IDENTIFIER);
         self.check_vendor_file().await || self.check_metadata_server().await
     }
 
     /// Tries to identify GCP via metadata server.
     async fn check_metadata_server(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "check_metadata_server");
+        let _enter = span.enter();
+
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, METADATA_URL);
         let client = reqwest::Client::new();
         let req = client.get(METADATA_URL).header("Metadata-Flavor", "Google");
 
@@ -28,12 +37,19 @@ impl Provider for GCP {
 
     /// Tries to identify GCP using vendor file(s).
     async fn check_vendor_file(&self) -> bool {
+        let span = tracing::span!(Level::TRACE, "check_vendor_file");
+        let _enter = span.enter();
+
+        debug!("Checking {} vendor file: {}", IDENTIFIER, VENDOR_FILE);
         let vendor_file = Path::new(VENDOR_FILE);
 
         if vendor_file.is_file() {
             return match fs::read_to_string(vendor_file) {
                 Ok(content) => content.contains("Google"),
-                Err(_) => false,
+                Err(err) => {
+                    error!("Error reading file: {:?}", err);
+                    false
+                },
             };
         }
 
