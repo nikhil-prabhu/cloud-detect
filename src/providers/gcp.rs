@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
-use tracing::{debug, error, info, Level};
+use tracing::{debug, error, Level};
 
 use crate::Provider;
 
@@ -16,11 +16,7 @@ pub(crate) struct GCP;
 impl Provider for GCP {
     /// Tries to identify GCP using all the implemented options.
     async fn identify(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "identify");
-        let _enter = span.enter();
-
-        info!("Attempting to identify {}", IDENTIFIER);
-        self.check_vendor_file().await || self.check_metadata_server().await
+        crate::identify(self, IDENTIFIER).await
     }
 
     /// Tries to identify GCP via metadata server.

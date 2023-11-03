@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use tracing::{debug, info, Level};
+use tracing::{debug, Level};
 
 use crate::Provider;
 
@@ -12,11 +12,7 @@ pub(crate) struct OpenStack;
 impl Provider for OpenStack {
     /// Tries to identify OpenStack using all the implemented options.
     async fn identify(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "identify");
-        let _enter = span.enter();
-
-        info!("Attempting to identify {}", IDENTIFIER);
-        self.check_vendor_file().await || self.check_metadata_server().await
+        crate::identify(self, IDENTIFIER).await
     }
 
     /// Tries to identify OpenStack via metadata server.

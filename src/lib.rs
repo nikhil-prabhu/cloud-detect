@@ -5,6 +5,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tokio::time::timeout as tokio_timeout;
+use tracing::{info, Level};
 
 use crate::providers::{alibaba, aws, azure, gcp, openstack};
 
@@ -28,6 +29,23 @@ const SUPPORTED_PROVIDERS: [&str; 5] = [
     alibaba::IDENTIFIER,
     openstack::IDENTIFIER,
 ];
+
+/// Convenience function that identifies a [`Provider`] using the [`Provider::check_metadata_server`]
+/// and [`Provider::check_vendor_file`] methods.
+///
+/// This function just serves to reduce code duplication across the crate.
+///
+/// # Arguments
+///
+/// * `provider` - The concrete provider object.
+/// * `identifier` - The identifier string for the provider.
+pub(crate) async fn identify<P: Provider>(provider: &P, identifier: &str) -> bool {
+    let span = tracing::span!(Level::TRACE, "identify");
+    let _enter = span.enter();
+
+    info!("Attempting to identify {}", identifier);
+    provider.check_vendor_file().await || provider.check_metadata_server().await
+}
 
 /// Detects the host's cloud provider.
 ///
