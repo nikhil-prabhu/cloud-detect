@@ -1,4 +1,5 @@
-///! Detect a host's cloud service provider.
+//! Detect a host's cloud service provider.
+
 use std::collections::HashMap;
 use std::time::Duration;
 
