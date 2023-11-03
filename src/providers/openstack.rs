@@ -1,3 +1,5 @@
+//! OpenStack.
+
 use async_trait::async_trait;
 use tracing::{debug, Level};
 
@@ -6,7 +8,7 @@ use crate::Provider;
 const METADATA_URL: &str = "http://169.254.169.254/openstack/";
 pub const IDENTIFIER: &str = "openstack";
 
-pub(crate) struct OpenStack;
+pub struct OpenStack;
 
 #[async_trait]
 impl Provider for OpenStack {

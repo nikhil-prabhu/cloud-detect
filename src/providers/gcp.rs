@@ -1,3 +1,5 @@
+//! Google Cloud Platform (GCP).
+
 use std::fs;
 use std::path::Path;
 
@@ -10,7 +12,7 @@ const METADATA_URL: &str = "http://metadata.google.internal/computeMetadata/v1/i
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
 pub const IDENTIFIER: &str = "gcp";
 
-pub(crate) struct GCP;
+pub struct GCP;
 
 #[async_trait]
 impl Provider for GCP {

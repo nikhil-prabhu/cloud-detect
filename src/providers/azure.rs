@@ -1,3 +1,5 @@
+//! Microsoft Azure.
+
 use std::fs;
 use std::path::Path;
 
@@ -22,7 +24,7 @@ struct MetadataResponse {
     compute: Compute,
 }
 
-pub(crate) struct Azure;
+pub struct Azure;
 
 #[async_trait]
 impl Provider for Azure {

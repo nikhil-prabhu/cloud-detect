@@ -1,5 +1,7 @@
-pub(crate) mod alibaba;
-pub(crate) mod aws;
-pub(crate) mod azure;
-pub(crate) mod gcp;
-pub(crate) mod openstack;
+//! Provider modules.
+
+pub mod alibaba;
+pub mod aws;
+pub mod azure;
+pub mod gcp;
+pub mod openstack;

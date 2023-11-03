@@ -9,20 +9,20 @@ use tracing::{info, Level};
 
 use crate::providers::{alibaba, aws, azure, gcp, openstack};
 
-mod providers;
+pub mod providers;
 
 const UNKNOWN_PROVIDER: &str = "unknown";
 
 /// Represents a cloud service provider.
 #[async_trait]
-pub(crate) trait Provider {
+pub trait Provider {
     async fn identify(&self) -> bool;
     async fn check_metadata_server(&self) -> bool;
     async fn check_vendor_file(&self) -> bool;
 }
 
 /// The list of currently supported providers.
-const SUPPORTED_PROVIDERS: [&str; 5] = [
+pub const SUPPORTED_PROVIDERS: [&str; 5] = [
     aws::IDENTIFIER,
     azure::IDENTIFIER,
     gcp::IDENTIFIER,
@@ -50,7 +50,7 @@ pub(crate) async fn identify<P: Provider>(provider: &P, identifier: &str) -> boo
 /// Detects the host's cloud provider.
 ///
 /// Returns "unknown" if the detection failed or timed out. If the detection was successful, it returns
-/// a value from [`struct@SUPPORTED_PROVIDERS`].
+/// a value from [`const@SUPPORTED_PROVIDERS`].
 ///
 /// # Arguments
 ///

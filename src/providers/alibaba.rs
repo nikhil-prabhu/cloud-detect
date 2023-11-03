@@ -1,3 +1,5 @@
+//! Alibaba Cloud.
+
 use std::fs;
 use std::path::Path;
 
@@ -11,7 +13,7 @@ const METADATA_URL: &str =
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
 pub const IDENTIFIER: &str = "alibaba";
 
-pub(crate) struct Alibaba;
+pub struct Alibaba;
 
 #[async_trait]
 impl Provider for Alibaba {

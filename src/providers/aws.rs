@@ -1,3 +1,5 @@
+//! Amazon Web Services (AWS).
+
 use std::fs;
 use std::path::Path;
 
@@ -22,7 +24,7 @@ struct MetadataResponse {
     instance_id: String,
 }
 
-pub(crate) struct AWS;
+pub struct AWS;
 
 #[async_trait]
 impl Provider for AWS {
