@@ -13,6 +13,7 @@ use crate::providers::{alibaba, aws, azure, gcp, openstack};
 pub mod providers;
 
 const UNKNOWN_PROVIDER: &str = "unknown";
+const DETECTION_TIMEOUT: u64 = 5; // seconds
 
 /// Represents a cloud service provider.
 #[async_trait]
@@ -59,7 +60,7 @@ pub(crate) async fn identify<P: Provider>(provider: &P, identifier: &str) -> boo
 pub async fn detect(timeout: Option<u64>) -> &'static str {
     type P = Box<dyn Provider + Send + Sync>;
 
-    let timeout = Duration::from_secs(timeout.unwrap_or(5));
+    let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<&str>(1);
     let mut identifiers: HashMap<&str, P> = HashMap::from([
         (aws::IDENTIFIER, Box::new(aws::AWS) as P),
