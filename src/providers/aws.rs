@@ -36,7 +36,10 @@ impl Provider for AWS {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");
         let _enter = span.enter();
 
-        debug!("Checking {} metadata using url: {}", IDENTIFIER, METADATA_URL);
+        debug!(
+            "Checking {} metadata using url: {}",
+            IDENTIFIER, METADATA_URL
+        );
         return match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
@@ -46,13 +49,13 @@ impl Provider for AWS {
                     Err(err) => {
                         error!("Error reading response: {:?}", err);
                         false
-                    },
+                    }
                 };
             }
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false
-            },
+            }
         };
     }
 
@@ -71,7 +74,7 @@ impl Provider for AWS {
                     Err(err) => {
                         error!("Error reading file: {:?}", err);
                         false
-                    },
+                    }
                 };
             }
         }

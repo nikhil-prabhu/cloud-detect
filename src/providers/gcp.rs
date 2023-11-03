@@ -24,7 +24,10 @@ impl Provider for GCP {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");
         let _enter = span.enter();
 
-        debug!("Checking {} metadata using url: {}", IDENTIFIER, METADATA_URL);
+        debug!(
+            "Checking {} metadata using url: {}",
+            IDENTIFIER, METADATA_URL
+        );
         let client = reqwest::Client::new();
         let req = client.get(METADATA_URL).header("Metadata-Flavor", "Google");
 
@@ -45,7 +48,7 @@ impl Provider for GCP {
                 Err(err) => {
                     error!("Error reading file: {:?}", err);
                     false
-                },
+                }
             };
         }
 

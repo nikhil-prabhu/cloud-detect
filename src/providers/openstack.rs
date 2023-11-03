@@ -20,7 +20,10 @@ impl Provider for OpenStack {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");
         let _enter = span.enter();
 
-        debug!("Checking {} metadata using url: {}", IDENTIFIER, METADATA_URL);
+        debug!(
+            "Checking {} metadata using url: {}",
+            IDENTIFIER, METADATA_URL
+        );
         reqwest::get(METADATA_URL).await.is_ok()
     }
 
