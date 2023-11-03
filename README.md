@@ -40,7 +40,10 @@ use cloud_detect::detect;
 
 #[tokio::main]
 async fn main() {
-    let provider = detect().await;
+    // With default timeout (5 seconds).
+    let provider = detect(None).await;
+    // With custom timeout.
+    let provider = detect(Some(1)).await; // 1 second.
 
     // When tested on AWS:
     println!("{}", provider); // "aws"
@@ -57,7 +60,7 @@ use cloud_detect::SUPPORTED_PROVIDERS;
 
 #[tokio::main]
 async fn main() {
-    println("{}", SUPPORTED_PROVIDERS.join(", "));
+    println!("{}", SUPPORTED_PROVIDERS.join(", "));
 }
 ```
 
