@@ -66,7 +66,7 @@ First, add the library to your project by adding the following to your `Cargo.to
 
 ```toml
 [dependencies]
-cloud-detect = "0.5.0"
+cloud-detect = "1.0.0"
 tokio = { version = "1.29.1", features = ["full"] }
 tracing-subscriber = "0.3.17" # Only needed if real-time logging is required.
 ```
