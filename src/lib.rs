@@ -6,7 +6,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tokio::time::timeout as tokio_timeout;
-use tracing::{info, Level};
+use tracing::{debug, info, Level};
 
 use crate::providers::{alibaba, aws, azure, gcp, openstack};
 
@@ -58,6 +58,9 @@ pub(crate) async fn identify<P: Provider>(provider: &P, identifier: &str) -> boo
 ///
 /// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to 5 if `None`.
 pub async fn detect(timeout: Option<u64>) -> &'static str {
+    let span = tracing::span!(Level::TRACE, "detect");
+    let _enter = span.enter();
+
     type P = Box<dyn Provider + Send + Sync>;
 
     let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
@@ -74,9 +77,12 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
         let tx = tx.clone();
         let identifier = identifiers.remove(provider).unwrap();
 
+        debug!("Attempting to identify {}", provider);
         tokio::spawn(async move {
             if identifier.identify().await {
-                tx.send(&provider).await.unwrap();
+                if let Err(err) = tx.send(&provider).await {
+                    debug!("Got error for provider {}: {:?}", provider, err);
+                }
             }
         });
     }
