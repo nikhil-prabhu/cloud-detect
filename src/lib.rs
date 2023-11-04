@@ -1,138 +1,94 @@
-///! Detect a host's cloud service provider.
-mod consts;
-
-#[cfg(feature = "blocking")]
-pub mod blocking;
+//! Detect a host's cloud service provider.
 
 use std::collections::HashMap;
-use std::error::Error;
-use std::sync::mpsc::{self, TryRecvError};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use lazy_static::lazy_static;
+use async_trait::async_trait;
+use tokio::sync::mpsc;
+use tokio::time::timeout as tokio_timeout;
+use tracing::{debug, info, Level};
 
-use consts::*;
+use crate::providers::{alibaba, aws, azure, gcp, openstack};
 
-lazy_static! {
-    /// A mapping of supported cloud providers with their metadata URLs.
-    pub(crate) static ref PROVIDER_METADATA_MAP: HashMap<&'static str, &'static str> = {
-        let mut map = HashMap::new();
-        map.insert(AMAZON_WEB_SERVICES, "http://169.254.169.254/latest/");
-        map.insert(
-            MICROSOFT_AZURE,
-            "http://169.254.169.254/metadata/v1/InstanceInfo",
-        );
-        map.insert(
-            GOOGLE_CLOUD_PLATFORM,
-            "http://metadata.google.internal/computeMetadata/",
-        );
-        map.insert(ALIBABA_CLOUD, "http://100.100.100.200/latest/");
-        map.insert(OPENSTACK, "http://169.254.169.254/openstack/");
-        map
-    };
+pub mod providers;
+
+const UNKNOWN_PROVIDER: &str = "unknown";
+const DETECTION_TIMEOUT: u64 = 5; // seconds
+
+/// Represents a cloud service provider.
+#[async_trait]
+pub trait Provider {
+    async fn identify(&self) -> bool;
+    async fn check_metadata_server(&self) -> bool;
+    async fn check_vendor_file(&self) -> bool;
 }
 
-/// Makes a GET request to the specified metadata URL and returns true if successful.
+/// The list of currently supported providers.
+pub const SUPPORTED_PROVIDERS: [&str; 5] = [
+    aws::IDENTIFIER,
+    azure::IDENTIFIER,
+    gcp::IDENTIFIER,
+    alibaba::IDENTIFIER,
+    openstack::IDENTIFIER,
+];
+
+/// Convenience function that identifies a [`Provider`] using the [`Provider::check_metadata_server`]
+/// and [`Provider::check_vendor_file`] methods.
+///
+/// This function just serves to reduce code duplication across the crate.
 ///
 /// # Arguments
 ///
-/// * `metadata_url` - The metadata URL for the cloud service provider.
-async fn ping(metadata_url: &str) -> bool {
-    match reqwest::get(metadata_url).await {
-        Ok(resp) => resp.status() == reqwest::StatusCode::OK,
-        Err(_) => false,
-    }
+/// * `provider` - The concrete provider object.
+/// * `identifier` - The identifier string for the provider.
+pub(crate) async fn identify<P: Provider>(provider: &P, identifier: &str) -> bool {
+    let span = tracing::span!(Level::TRACE, "identify");
+    let _enter = span.enter();
+
+    info!("Attempting to identify {}", identifier);
+    provider.check_vendor_file().await || provider.check_metadata_server().await
 }
 
-// TODO: add test(s)
-/// Returns a list of the currently supported cloud service providers.
-pub fn supported_providers() -> Vec<&'static str> {
-    PROVIDER_METADATA_MAP
-        .keys()
-        .copied()
-        .collect::<Vec<&'static str>>()
-}
-
-// TODO: add test(s)
-/// Detects the current host's cloud service provider.
-/// Returns "unknown" if the detection failed, if the current cloud service provider is unsupported, or if minor errors occurred during detection.
+/// Detects the host's cloud provider.
+///
+/// Returns "unknown" if the detection failed or timed out. If the detection was successful, it returns
+/// a value from [`const@SUPPORTED_PROVIDERS`].
 ///
 /// # Arguments
 ///
-/// * `timeout` - How long to attempt detection for (in seconds). Defaults to 3 seconds.
-pub async fn detect(timeout: Option<u64>) -> String {
-    // Set default timeout if none specified.
-    let timeout_duration = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
+/// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to 5 if `None`.
+pub async fn detect(timeout: Option<u64>) -> &'static str {
+    let span = tracing::span!(Level::TRACE, "detect");
+    let _enter = span.enter();
 
-    // Concurrently check if the current host belongs to any of the supported providers and write the detected provider
-    // to a channel.
-    let (tx, rx) = mpsc::sync_channel::<String>(1);
-    for (provider, metadata_url) in PROVIDER_METADATA_MAP.iter() {
+    type P = Box<dyn Provider + Send + Sync>;
+
+    let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
+    let (tx, mut rx) = mpsc::channel::<&str>(1);
+    let mut identifiers: HashMap<&str, P> = HashMap::from([
+        (aws::IDENTIFIER, Box::new(aws::AWS) as P),
+        (azure::IDENTIFIER, Box::new(azure::Azure) as P),
+        (gcp::IDENTIFIER, Box::new(gcp::GCP) as P),
+        (alibaba::IDENTIFIER, Box::new(alibaba::Alibaba) as P),
+        (openstack::IDENTIFIER, Box::new(openstack::OpenStack) as P),
+    ]);
+
+    for provider in SUPPORTED_PROVIDERS.iter() {
         let tx = tx.clone();
+        let identifier = identifiers.remove(provider).unwrap();
+
+        debug!("Attempting to identify {}", provider);
         tokio::spawn(async move {
-            if ping(metadata_url).await {
-                tx.send(provider.to_string()).unwrap();
+            if identifier.identify().await {
+                if let Err(err) = tx.send(&provider).await {
+                    debug!("Got error for provider {}: {:?}", provider, err);
+                }
             }
         });
     }
 
-    // Wait for a value from the channel or timeout.
-    let start_time = Instant::now();
-    let provider = loop {
-        match rx.try_recv() {
-            Ok(value) => break value,
-            Err(TryRecvError::Empty) => {
-                if start_time.elapsed() >= timeout_duration {
-                    break "unknown".to_string();
-                }
-            }
-            Err(_) => break "unknown".to_string(),
-        }
-    };
-
-    provider
-}
-
-// TODO: add test(s)
-/// Attempts to detect the current host's cloud service provider.
-/// If we encounter an error, we return it rather than unwrapping or assuming the provider as "unknown".
-///
-/// **NOTE**: This also means that this function returns an error if the current host's provider is unsupported.
-///
-/// # Arguments
-///
-/// * `timeout` - How long to attempt detection for (in seconds). Defaults to 3 seconds.
-pub async fn try_detect(timeout: Option<u64>) -> Result<String, Box<dyn Error>> {
-    // Set default timeout if none specified.
-    let timeout_duration = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
-
-    // Concurrently check if the current host belongs to any of the supported providers and write the detected provider
-    // to a channel.
-    let (tx, rx) = mpsc::sync_channel::<String>(1);
-    for (provider, metadata_url) in PROVIDER_METADATA_MAP.iter() {
-        let tx = tx.clone();
-        tokio::spawn(async move {
-            if ping(metadata_url).await {
-                tx.send(provider.to_string())?;
-            }
-
-            Ok::<(), Box<dyn Error + Send + Sync>>(())
-        });
+    match tokio_timeout(timeout, rx.recv()).await {
+        Ok(Some(provider)) => provider,
+        _ => UNKNOWN_PROVIDER,
     }
-
-    // Wait for a value from the channel or timeout.
-    let start_time = Instant::now();
-    let provider = loop {
-        match rx.try_recv() {
-            Ok(value) => break Ok(value),
-            Err(TryRecvError::Empty) => {
-                if start_time.elapsed() >= timeout_duration {
-                    break Err("Timed out when attempting to detect provider".to_string())?;
-                }
-            }
-            Err(err) => break Err(err),
-        }
-    }?;
-
-    Ok(provider)
 }
