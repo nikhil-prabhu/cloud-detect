@@ -22,6 +22,7 @@ module, and replicates most of its functionality (even most of the code is struc
     - Alibaba Cloud (`alibaba`)
     - OpenStack (`openstack`)
 * Fast, simple and extensible.
+* Real-time logging in the console.
 
 ## Usage
 
@@ -31,6 +32,7 @@ First, add the library to your project by adding the following to your `Cargo.to
 [dependencies]
 cloud-detect = "0.5.0"
 tokio = { version = "1.29.1", features = ["full"] }
+tracing-subscriber = "0.3.17" # Only needed if real-time logging is required.
 ```
 
 Next, you can detect the current host's cloud provider as follows:
@@ -40,6 +42,8 @@ use cloud_detect::detect;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init(); // Only needed if real-time logging is required.
+
     // With default timeout (5 seconds).
     let provider = detect(None).await;
     // With custom timeout.
