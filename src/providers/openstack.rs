@@ -1,7 +1,7 @@
 //! OpenStack.
 
 use async_trait::async_trait;
-use tracing::{debug, Level};
+use tracing::{debug, error, Level};
 
 use crate::Provider;
 
@@ -26,7 +26,13 @@ impl Provider for OpenStack {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        reqwest::get(METADATA_URL).await.is_ok()
+        return match reqwest::get(METADATA_URL).await {
+            Ok(resp) => resp.status().is_success(),
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                false
+            }
+        };
     }
 
     /// Tries to identify OpenStack using vendor file(s).
