@@ -24,6 +24,42 @@ module, and replicates most of its functionality (even most of the code is struc
 * Fast, simple and extensible.
 * Real-time logging in the console.
 
+## Requirements
+
+### Linux
+
+OpenSSL 1.0.1, 1.0.2, 1.1.0, or 1.1.1 with headers (see https://github.com/sfackler/rust-openssl)
+
+#### Ubuntu and Debian-based distributions
+
+```bash
+$ sudo apt-get install pkg-config libssl-dev
+```
+
+#### Fedora and RHEL-based distributions
+
+```bash
+$ sudo dnf install pkg-config perl-FindBin openssl-devel
+```
+
+OR
+
+```bash
+$ sudo yum install pkg-config perl-FindBin openssl-devel
+```
+
+#### SLES and openSUSE
+
+```bash
+$ sudo zypper in pkg-config libopenssl-devel
+```
+
+#### Arch Linux
+
+```bash
+$ sudo pacman -S pkg-config openssl
+```
+
 ## Usage
 
 First, add the library to your project by adding the following to your `Cargo.toml` file:
