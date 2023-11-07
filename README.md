@@ -21,6 +21,7 @@ module, and replicates most of its functionality (even most of the code is struc
     - Google Cloud Platform (`gcp`)
     - Alibaba Cloud (`alibaba`)
     - OpenStack (`openstack`)
+    - DigitalOcean (`digitalocean`)
     - Oracle Cloud Infrastructure (`oci`)
     - Vultr (`vultr`)
 * Fast, simple and extensible.
