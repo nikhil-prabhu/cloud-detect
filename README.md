@@ -22,6 +22,7 @@ module, and replicates most of its functionality (even most of the code is struc
     - Alibaba Cloud (`alibaba`)
     - OpenStack (`openstack`)
     - Oracle Cloud Infrastructure (`oci`)
+    - Vultr (`vultr`)
 * Fast, simple and extensible.
 * Real-time logging in the console.
 

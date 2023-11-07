@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use tokio::time::timeout as tokio_timeout;
 use tracing::{debug, info, Level};
 
-use crate::providers::{alibaba, aws, azure, digitalocean, gcp, oci, openstack};
+use crate::providers::{alibaba, aws, azure, digitalocean, gcp, oci, openstack, vultr};
 
 pub mod providers;
 
@@ -24,7 +24,7 @@ pub trait Provider {
 }
 
 /// The list of currently supported providers.
-pub const SUPPORTED_PROVIDERS: [&str; 7] = [
+pub const SUPPORTED_PROVIDERS: [&str; 8] = [
     aws::IDENTIFIER,
     azure::IDENTIFIER,
     gcp::IDENTIFIER,
@@ -32,6 +32,7 @@ pub const SUPPORTED_PROVIDERS: [&str; 7] = [
     openstack::IDENTIFIER,
     digitalocean::IDENTIFIER,
     oci::IDENTIFIER,
+    vultr::IDENTIFIER,
 ];
 
 /// Convenience function that identifies a [`Provider`] using the [`Provider::check_metadata_server`]
