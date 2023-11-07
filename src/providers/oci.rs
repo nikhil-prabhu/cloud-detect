@@ -4,7 +4,6 @@ use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::Deserialize;
 use tracing::{debug, error, Level};
 
 use crate::Provider;
