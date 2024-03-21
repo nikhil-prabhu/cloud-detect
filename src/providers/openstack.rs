@@ -1,11 +1,26 @@
 //! OpenStack.
 
+use std::fs;
+use std::path::Path;
 use async_trait::async_trait;
 use tracing::{debug, error, Level};
 
 use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/openstack/";
+const PRODUCT_NAME_FILE: &str = "/sys/class/dmi/id/product_name";
+const PRODUCT_NAMES: [&str; 2] = [
+    "Openstack Nova",
+    "OpenStack Compute",
+];
+const CHASSIS_ASSET_TAG_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
+const CHASSIS_ASSET_TAGS: [&str; 5] = [
+    "HUAWEICLOUD",
+    "OpenTelekomCloud",
+    "SAP CCloud VM",
+    "OpenStack Nova",
+    "OpenStack Compute",
+];
 pub const IDENTIFIER: &str = "openstack";
 
 pub struct OpenStack;
@@ -40,8 +55,38 @@ impl Provider for OpenStack {
         let span = tracing::span!(Level::TRACE, "check_vendor_file");
         let _enter = span.enter();
 
-        // Vendor file checking is currently not implemented (because I have no clue how to do so).
-        debug!("Vendor file checking currently unimplemented");
+        debug!("Checking {} vendor file: {}", IDENTIFIER, PRODUCT_NAME_FILE);
+        let product_name_file = Path::new(PRODUCT_NAME_FILE);
+
+        if product_name_file.is_file() {
+            match fs::read_to_string(product_name_file) {
+                Ok(content) => {
+                    if PRODUCT_NAMES.iter().any(|&name| content.contains(name)) {
+                        return true;
+                    }
+                }
+                Err(err) => {
+                    error!("Error reading file: {:?}", err);
+                }
+            }
+        }
+
+        debug!("Checking {} vendor file: {}", IDENTIFIER, CHASSIS_ASSET_TAG_FILE);
+        let chassis_asset_tag_file = Path::new(CHASSIS_ASSET_TAG_FILE);
+
+        if chassis_asset_tag_file.is_file() {
+            match fs::read_to_string(chassis_asset_tag_file) {
+                Ok(content) => {
+                    if CHASSIS_ASSET_TAGS.iter().any(|&name| content.contains(name)) {
+                        return true;
+                    }
+                }
+                Err(err) => {
+                    error!("Error reading file: {:?}", err);
+                }
+            }
+        }
+
         false
     }
 }
