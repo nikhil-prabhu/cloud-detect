@@ -74,6 +74,7 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
         (gcp::IDENTIFIER, Box::new(gcp::GCP) as P),
         (alibaba::IDENTIFIER, Box::new(alibaba::Alibaba) as P),
         (openstack::IDENTIFIER, Box::new(openstack::OpenStack) as P),
+        (vultr::IDENTIFIER, Box::new(vultr::Vultr) as P),
     ]);
 
     for provider in SUPPORTED_PROVIDERS.iter() {
