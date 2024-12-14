@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::LazyLock;
 
 use async_trait::async_trait;
-use tracing::{debug, error, Level};
+use tracing::{debug, error, info, Level};
 
 use crate::{register_provider, Provider};
 
@@ -22,9 +22,12 @@ static _REGISTER: LazyLock<()> = LazyLock::new(|| {
 impl Provider for OCI {
     /// Tries to identify OCI using all the implemented options.
     async fn identify(&self) -> bool {
-        crate::identify(self, IDENTIFIER).await
+        info!("Checking Oracle Cloud Infrastructure");
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
+}
 
+impl OCI {
     /// Tries to identify OCI via metadata server.
     async fn check_metadata_server(&self) -> bool {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");

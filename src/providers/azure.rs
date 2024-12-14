@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
-use tracing::{debug, error, Level};
+use tracing::{debug, error, info, Level};
 
 use crate::{register_provider, Provider};
 
@@ -35,9 +35,12 @@ static _REGISTER: LazyLock<()> = LazyLock::new(|| {
 impl Provider for Azure {
     /// Tries to identify Azure using all the implemented options.
     async fn identify(&self) -> bool {
-        crate::identify(self, IDENTIFIER).await
+        info!("Checking Microsoft Azure");
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
+}
 
+impl Azure {
     /// Tries to identify Azure via metadata server.
     async fn check_metadata_server(&self) -> bool {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");

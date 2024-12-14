@@ -6,7 +6,7 @@ use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
-use tracing::{debug, error, Level};
+use tracing::{debug, error, info, Level};
 
 use crate::{register_provider, Provider};
 
@@ -29,9 +29,12 @@ struct MetadataResponse {
 impl Provider for DigitalOcean {
     /// Tries to identify DigitalOcean using all the implemented options.
     async fn identify(&self) -> bool {
-        crate::identify(self, IDENTIFIER).await
+        info!("Checking DigitalOcean");
+        self.check_vendor_file().await || self.check_metadata_server().await
     }
+}
 
+impl DigitalOcean {
     /// Tries to identify DigitalOcean via metadata server.
     async fn check_metadata_server(&self) -> bool {
         let span = tracing::span!(Level::TRACE, "check_metadata_server");
