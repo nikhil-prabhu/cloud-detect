@@ -3,11 +3,10 @@
 use async_trait::async_trait;
 use std::fs;
 use std::path::Path;
-use std::sync::LazyLock;
 
 use tracing::{debug, error, info, Level};
 
-use crate::{register_provider, Provider};
+use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/openstack/";
 const PRODUCT_NAME_FILE: &str = "/sys/class/dmi/id/product_name";
@@ -23,10 +22,6 @@ const CHASSIS_ASSET_TAGS: [&str; 5] = [
 pub const IDENTIFIER: &str = "openstack";
 
 pub struct OpenStack;
-
-static _REGISTER: LazyLock<()> = LazyLock::new(|| {
-    register_provider!(IDENTIFIER, OpenStack);
-});
 
 #[async_trait]
 impl Provider for OpenStack {

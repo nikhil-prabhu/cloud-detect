@@ -2,23 +2,18 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
 use tracing::{debug, error, info, Level};
 
-use crate::{register_provider, Provider};
+use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/v1.json";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
 pub const IDENTIFIER: &str = "vultr";
 
 pub struct Vultr;
-
-static _REGISTER: LazyLock<()> = LazyLock::new(|| {
-    register_provider!(IDENTIFIER, Vultr);
-});
 
 #[derive(Deserialize)]
 struct MetadataResponse {

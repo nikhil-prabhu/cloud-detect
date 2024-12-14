@@ -2,22 +2,17 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use tracing::{debug, error, info, Level};
 
-use crate::{register_provider, Provider};
+use crate::Provider;
 
 const METADATA_URL: &str = "http://metadata.google.internal/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
 pub const IDENTIFIER: &str = "gcp";
 
 pub struct GCP;
-
-static _REGISTER: LazyLock<()> = LazyLock::new(|| {
-    register_provider!(IDENTIFIER, GCP);
-});
 
 #[async_trait]
 impl Provider for GCP {

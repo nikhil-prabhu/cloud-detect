@@ -2,13 +2,12 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
 use tracing::{debug, error, info, Level};
 
-use crate::{register_provider, Provider};
+use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/latest/dynamic/instance-identity/document";
 const VENDOR_FILES: [&str; 2] = [
@@ -26,10 +25,6 @@ struct MetadataResponse {
 }
 
 pub struct AWS;
-
-static _REGISTER: LazyLock<()> = LazyLock::new(|| {
-    register_provider!(IDENTIFIER, AWS);
-});
 
 #[async_trait]
 impl Provider for AWS {
@@ -51,17 +46,13 @@ impl AWS {
             IDENTIFIER, METADATA_URL
         );
         match reqwest::get(METADATA_URL).await {
-            Ok(resp) => {
-                match resp.json::<MetadataResponse>().await {
-                    Ok(resp) => {
-                        resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-")
-                    }
-                    Err(err) => {
-                        error!("Error reading response: {:?}", err);
-                        false
-                    }
+            Ok(resp) => match resp.json::<MetadataResponse>().await {
+                Ok(resp) => resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-"),
+                Err(err) => {
+                    error!("Error reading response: {:?}", err);
+                    false
                 }
-            }
+            },
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false

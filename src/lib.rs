@@ -7,6 +7,8 @@ use tokio::sync::mpsc;
 use tokio::time::timeout as tokio_timeout;
 use tracing::{debug, Level};
 
+use crate::providers::*;
+
 pub mod providers;
 
 const UNKNOWN_PROVIDER: &str = "unknown";
@@ -18,26 +20,23 @@ pub trait Provider: Send + Sync {
     async fn identify(&self) -> bool;
 }
 
-static PROVIDERS: LazyLock<Mutex<HashMap<&'static str, Arc<dyn Provider + Send + Sync>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+type P = Arc<dyn Provider + Send + Sync>;
 
-/// Registers a provider with the global provider map.
-///
-/// # Arguments
-///
-/// * `id` - The identifier string for the provider.
-/// * `provider` - The concrete provider object.
-#[macro_export]
-macro_rules! register_provider {
-    ($id:expr, $provider:expr) => {{
-        use std::sync::Arc as _Arc;
-
-        use crate::PROVIDERS as _PROVIDERS;
-
-        let mut providers = _PROVIDERS.lock().unwrap();
-        providers.insert($id, _Arc::new($provider));
-    }};
-}
+static PROVIDERS: LazyLock<Mutex<HashMap<&'static str, P>>> = LazyLock::new(|| {
+    Mutex::new(HashMap::from([
+        (alibaba::IDENTIFIER, Arc::new(alibaba::Alibaba) as P),
+        (aws::IDENTIFIER, Arc::new(aws::AWS) as P),
+        (azure::IDENTIFIER, Arc::new(azure::Azure) as P),
+        (
+            digitalocean::IDENTIFIER,
+            Arc::new(digitalocean::DigitalOcean) as P,
+        ),
+        (gcp::IDENTIFIER, Arc::new(gcp::GCP) as P),
+        (oci::IDENTIFIER, Arc::new(oci::OCI) as P),
+        (openstack::IDENTIFIER, Arc::new(openstack::OpenStack) as P),
+        (vultr::IDENTIFIER, Arc::new(vultr::Vultr) as P),
+    ]))
+});
 
 /// Returns a list of supported providers.
 pub fn supported_providers() -> Vec<&'static str> {
@@ -89,5 +88,31 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
     match tokio_timeout(timeout, rx.recv()).await {
         Ok(Some(provider)) => provider,
         _ => UNKNOWN_PROVIDER,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_supported_providers() {
+        let providers = supported_providers();
+        assert_eq!(providers.len(), 8);
+        assert!(providers.contains(&alibaba::IDENTIFIER));
+        assert!(providers.contains(&aws::IDENTIFIER));
+        assert!(providers.contains(&azure::IDENTIFIER));
+        assert!(providers.contains(&digitalocean::IDENTIFIER));
+        assert!(providers.contains(&gcp::IDENTIFIER));
+        assert!(providers.contains(&oci::IDENTIFIER));
+        assert!(providers.contains(&openstack::IDENTIFIER));
+        assert!(providers.contains(&vultr::IDENTIFIER));
+    }
+
+    // FIXME: This test will fail on actual cloud instances.
+    #[tokio::test]
+    async fn test_detect() {
+        let provider = detect(None).await;
+        assert_eq!(provider, UNKNOWN_PROVIDER);
     }
 }
