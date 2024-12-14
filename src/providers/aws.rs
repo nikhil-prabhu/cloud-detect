@@ -2,12 +2,13 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
 use tracing::{debug, error, Level};
 
-use crate::Provider;
+use crate::{register_provider, Provider};
 
 const METADATA_URL: &str = "http://169.254.169.254/latest/dynamic/instance-identity/document";
 const VENDOR_FILES: [&str; 2] = [
@@ -25,6 +26,10 @@ struct MetadataResponse {
 }
 
 pub struct AWS;
+
+static _REGISTER: LazyLock<()> = LazyLock::new(|| {
+    register_provider!(IDENTIFIER, AWS);
+});
 
 #[async_trait]
 impl Provider for AWS {

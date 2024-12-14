@@ -2,12 +2,13 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use serde::Deserialize;
 use tracing::{debug, error, Level};
 
-use crate::Provider;
+use crate::{register_provider, Provider};
 
 const METADATA_URL: &str = "http://169.254.169.254/metadata/instance?api-version=2017-12-01";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
@@ -25,6 +26,10 @@ struct MetadataResponse {
 }
 
 pub struct Azure;
+
+static _REGISTER: LazyLock<()> = LazyLock::new(|| {
+    register_provider!(IDENTIFIER, Azure);
+});
 
 #[async_trait]
 impl Provider for Azure {

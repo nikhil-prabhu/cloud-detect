@@ -2,17 +2,21 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::LazyLock;
 
 use async_trait::async_trait;
-use serde::Deserialize;
 use tracing::{debug, error, Level};
 
-use crate::Provider;
+use crate::{register_provider, Provider};
 
 const VENDOR_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
 pub const IDENTIFIER: &str = "oci";
 
 pub struct OCI;
+
+static _REGISTER: LazyLock<()> = LazyLock::new(|| {
+    register_provider!(IDENTIFIER, OCI);
+});
 
 #[async_trait]
 impl Provider for OCI {
