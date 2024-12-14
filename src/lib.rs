@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 use tokio::time::timeout as tokio_timeout;
-use tracing::{debug, Level};
+use tracing::{debug, error, Level};
 
 use crate::providers::*;
 

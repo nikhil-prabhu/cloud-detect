@@ -31,7 +31,11 @@ impl Provider for DigitalOcean {
     async fn identify(&self, tx: Sender<&'static str>) {
         info!("Checking DigitalOcean");
         if self.check_vendor_file().await || self.check_metadata_server().await {
-            tx.send(IDENTIFIER).await.unwrap();
+            let res = tx.send(IDENTIFIER).await;
+
+            if let Err(err) = res {
+                error!("Error sending message: {:?}", err);
+            }
         }
     }
 }

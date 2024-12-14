@@ -37,8 +37,12 @@ impl Provider for AWS {
     async fn identify(&self, tx: Sender<&'static str>) {
         info!("Checking Amazon Web Services");
         if self.check_vendor_file().await || self.check_metadata_server().await {
-            tx.send(IDENTIFIER).await.unwrap();
-        };
+            let res = tx.send(IDENTIFIER).await;
+
+            if let Err(err) = res {
+                error!("Error sending message: {:?}", err);
+            }
+        }
     }
 }
 
