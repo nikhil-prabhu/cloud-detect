@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::time::Duration;
+use std::sync::LazyLock;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc;
@@ -17,7 +18,7 @@ const DETECTION_TIMEOUT: u64 = 5; // seconds
 
 /// Represents a cloud service provider.
 #[async_trait]
-pub trait Provider {
+pub trait Provider: Send + Sync {
     async fn identify(&self) -> bool;
     async fn check_metadata_server(&self) -> bool;
     async fn check_vendor_file(&self) -> bool;
@@ -30,21 +31,32 @@ macro_rules! count_exprs {
 }
 
 macro_rules! register_providers {
-    ($($name:expr),*) => {
-        /// The list of currently supported providers.
-        pub const SUPPORTED_PROVIDERS: [&str; count_exprs!($($name),*)] = [$($name),*];
+    // This macro takes in a list of tuples: (String, Provider)
+    ($($name:expr => $provider:expr),*) => {
+        // Create a HashMap to hold the provider mappings
+        pub static PROVIDERS: LazyLock<HashMap<&'static str, Box<dyn Provider>>> = LazyLock::new(|| {
+            let mut map = HashMap::new();
+            $(
+                map.insert($name, Box::new($provider) as Box<dyn Provider>);
+            )*
+            map
+        });
+
+        // Populate the list of supported providers (just the keys of the map)
+        /// List of supported cloud providers.
+        pub const SUPPORTED_PROVIDERS: [&'static str; count_exprs!($($name),*)] = [$($name),*];
     };
 }
 
 register_providers!(
-    aws::IDENTIFIER,
-    azure::IDENTIFIER,
-    gcp::IDENTIFIER,
-    alibaba::IDENTIFIER,
-    openstack::IDENTIFIER,
-    digitalocean::IDENTIFIER,
-    oci::IDENTIFIER,
-    vultr::IDENTIFIER
+    aws::IDENTIFIER => aws::AWS,
+    azure::IDENTIFIER => azure::Azure,
+    gcp::IDENTIFIER => gcp::GCP,
+    alibaba::IDENTIFIER => alibaba::Alibaba,
+    digitalocean::IDENTIFIER => digitalocean::DigitalOcean,
+    oci::IDENTIFIER => oci::OCI,
+    openstack::IDENTIFIER => openstack::OpenStack,
+    vultr::IDENTIFIER => vultr::Vultr
 );
 
 /// Convenience function that identifies a [`Provider`] using the [`Provider::check_metadata_server`]
@@ -80,24 +92,15 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
 
     let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<&str>(1);
-    let mut identifiers: HashMap<&str, P> = HashMap::from([
-        (aws::IDENTIFIER, Box::new(aws::AWS) as P),
-        (azure::IDENTIFIER, Box::new(azure::Azure) as P),
-        (gcp::IDENTIFIER, Box::new(gcp::GCP) as P),
-        (alibaba::IDENTIFIER, Box::new(alibaba::Alibaba) as P),
-        (openstack::IDENTIFIER, Box::new(openstack::OpenStack) as P),
-        (vultr::IDENTIFIER, Box::new(vultr::Vultr) as P),
-    ]);
 
-    for provider in SUPPORTED_PROVIDERS.iter() {
+    for (id, provider) in PROVIDERS.iter() {
         let tx = tx.clone();
-        let identifier = identifiers.remove(provider).unwrap();
 
-        debug!("Attempting to identify {}", provider);
+        debug!("Attempting to identify {}", id);
         tokio::spawn(async move {
-            if identifier.identify().await {
-                if let Err(err) = tx.send(&provider).await {
-                    debug!("Got error for provider {}: {:?}", provider, err);
+            if provider.identify().await {
+                if let Err(err) = tx.send(&id).await {
+                    debug!("Got error for provider {}: {:?}", id, err);
                 }
             }
         });
