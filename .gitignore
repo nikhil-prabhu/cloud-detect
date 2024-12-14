@@ -18,4 +18,5 @@ Cargo.lock
 
 /target
 /Cargo.lock
-.vscode/settings.json
+.vscode/
+.idea/
