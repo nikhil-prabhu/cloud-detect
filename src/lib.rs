@@ -49,7 +49,7 @@ pub fn supported_providers() -> Vec<&'static str> {
 /// Detects the host's cloud provider.
 ///
 /// Returns "unknown" if the detection failed or timed out. If the detection was successful, it returns
-/// a value from [`const@SUPPORTED_PROVIDERS`].
+/// a value from [`supported_providers`](fn.supported_providers.html).
 ///
 /// # Arguments
 ///
