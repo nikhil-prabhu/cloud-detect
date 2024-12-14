@@ -1,0 +1,9 @@
+reorder_imports = true
+reorder_modules = true
+reorder_impl_items = true
+
+imports_layout = "HorizontalVertical"
+group_imports = "StdExternalCrate"
+
+format_strings = true
+format_code_in_doc_comments = true
