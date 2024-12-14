@@ -47,13 +47,13 @@ impl OpenStack {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        return match reqwest::get(METADATA_URL).await {
+        match reqwest::get(METADATA_URL).await {
             Ok(resp) => resp.status().is_success(),
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify OpenStack using vendor file(s).

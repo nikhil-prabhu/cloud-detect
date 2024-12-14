@@ -39,21 +39,19 @@ impl Alibaba {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        return match reqwest::get(METADATA_URL).await {
-            Ok(resp) => {
-                return match resp.text().await {
-                    Ok(text) => text.contains("ECS Virt"),
-                    Err(err) => {
-                        error!("Error reading response: {:?}", err);
-                        false
-                    }
-                };
-            }
+        match reqwest::get(METADATA_URL).await {
+            Ok(resp) => match resp.text().await {
+                Ok(text) => text.contains("ECS Virt"),
+                Err(err) => {
+                    error!("Error reading response: {:?}", err);
+                    false
+                }
+            },
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify Alibaba using vendor file(s).

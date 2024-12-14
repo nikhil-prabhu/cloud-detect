@@ -45,7 +45,7 @@ impl Vultr {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        return match reqwest::get(METADATA_URL).await {
+        match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
                     Ok(resp) => resp.instance_id.len() > 0,
@@ -59,7 +59,7 @@ impl Vultr {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify Vultr using vendor file(s).

@@ -53,7 +53,7 @@ impl Azure {
         let client = reqwest::Client::new();
         let req = client.get(METADATA_URL).header("Metadata", "true");
 
-        return match req.send().await {
+        match req.send().await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
                     Ok(resp) => resp.compute.vm_id.len() > 0,
@@ -67,7 +67,7 @@ impl Azure {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify Azure using vendor file(s).

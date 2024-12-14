@@ -44,7 +44,7 @@ impl DigitalOcean {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        return match reqwest::get(METADATA_URL).await {
+        match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
                 return match resp.json::<MetadataResponse>().await {
                     Ok(resp) => resp.droplet_id > 0,
@@ -58,7 +58,7 @@ impl DigitalOcean {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify DigitalOcean using vendor file(s).

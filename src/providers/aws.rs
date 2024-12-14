@@ -50,9 +50,9 @@ impl AWS {
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
         );
-        return match reqwest::get(METADATA_URL).await {
+        match reqwest::get(METADATA_URL).await {
             Ok(resp) => {
-                return match resp.json::<MetadataResponse>().await {
+                match resp.json::<MetadataResponse>().await {
                     Ok(resp) => {
                         resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-")
                     }
@@ -60,13 +60,13 @@ impl AWS {
                         error!("Error reading response: {:?}", err);
                         false
                     }
-                };
+                }
             }
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false
             }
-        };
+        }
     }
 
     /// Tries to identify AWS using vendor file(s).
