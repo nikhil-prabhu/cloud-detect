@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Sender;
 use tokio::time::timeout as tokio_timeout;
 use tracing::{debug, Level};
 
@@ -17,34 +17,33 @@ const DETECTION_TIMEOUT: u64 = 5; // seconds
 /// Represents a cloud service provider.
 #[async_trait]
 pub trait Provider: Send + Sync {
-    async fn identify(&self) -> bool;
+    fn identifier(&self) -> &'static str;
+    async fn identify(&self, tx: Sender<&'static str>);
 }
 
-type P = Arc<dyn Provider + Send + Sync>;
+type P = Arc<dyn Provider>;
 
-static PROVIDERS: LazyLock<Mutex<HashMap<&'static str, P>>> = LazyLock::new(|| {
-    Mutex::new(HashMap::from([
-        (alibaba::IDENTIFIER, Arc::new(alibaba::Alibaba) as P),
-        (aws::IDENTIFIER, Arc::new(aws::AWS) as P),
-        (azure::IDENTIFIER, Arc::new(azure::Azure) as P),
-        (
-            digitalocean::IDENTIFIER,
-            Arc::new(digitalocean::DigitalOcean) as P,
-        ),
-        (gcp::IDENTIFIER, Arc::new(gcp::GCP) as P),
-        (oci::IDENTIFIER, Arc::new(oci::OCI) as P),
-        (openstack::IDENTIFIER, Arc::new(openstack::OpenStack) as P),
-        (vultr::IDENTIFIER, Arc::new(vultr::Vultr) as P),
-    ]))
+static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
+    Mutex::new(vec![
+        Arc::new(alibaba::Alibaba) as P,
+        Arc::new(aws::AWS) as P,
+        Arc::new(azure::Azure) as P,
+        Arc::new(digitalocean::DigitalOcean) as P,
+        Arc::new(gcp::GCP) as P,
+        Arc::new(oci::OCI) as P,
+        Arc::new(openstack::OpenStack) as P,
+        Arc::new(vultr::Vultr) as P,
+    ])
 });
 
 /// Returns a list of supported providers.
 pub fn supported_providers() -> Vec<&'static str> {
     let guard = PROVIDERS.lock().unwrap();
-    let keys: Vec<&'static str> = guard.keys().map(|k| *k).collect();
+    let providers: Vec<&'static str> = guard.iter().map(|p| p.identifier()).collect();
+
     drop(guard);
 
-    keys
+    providers
 }
 
 /// Detects the host's cloud provider.
@@ -65,23 +64,19 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
     let guard = PROVIDERS.lock().unwrap();
 
     // Collect the Arc<dyn Provider> values
-    let provider_entries: Vec<(&str, Arc<dyn Provider + Send + Sync>)> = guard
+    let provider_entries: Vec<P> = guard
         .iter()
-        .map(|(k, v)| (*k, v.clone())) // Clone the Arc
+        .map(|p| p.clone()) // Clone the Arc
         .collect();
 
     drop(guard); // Explicitly drop the lock
 
-    for (id, provider) in provider_entries {
+    for provider in provider_entries {
         let tx = tx.clone();
 
-        debug!("Attempting to identify {}", id);
+        debug!("Spawning task for provider: {}", provider.identifier());
         tokio::spawn(async move {
-            if provider.identify().await {
-                if let Err(err) = tx.send(id).await {
-                    debug!("Got error for provider {}: {:?}", id, err);
-                }
-            }
+            provider.identify(tx).await;
         });
     }
 

@@ -1,9 +1,10 @@
 //! OpenStack.
 
-use async_trait::async_trait;
 use std::fs;
 use std::path::Path;
 
+use async_trait::async_trait;
+use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
 use crate::Provider;
@@ -25,10 +26,16 @@ pub struct OpenStack;
 
 #[async_trait]
 impl Provider for OpenStack {
+    fn identifier(&self) -> &'static str {
+        IDENTIFIER
+    }
+
     /// Tries to identify OpenStack using all the implemented options.
-    async fn identify(&self) -> bool {
+    async fn identify(&self, tx: Sender<&'static str>) {
         info!("Checking OpenStack");
-        self.check_vendor_file().await || self.check_metadata_server().await
+        if self.check_vendor_file().await || self.check_metadata_server().await {
+            tx.send(IDENTIFIER).await.unwrap();
+        }
     }
 }
 

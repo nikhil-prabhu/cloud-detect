@@ -5,6 +5,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use serde::Deserialize;
+use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
 use crate::Provider;
@@ -28,10 +29,16 @@ pub struct AWS;
 
 #[async_trait]
 impl Provider for AWS {
+    fn identifier(&self) -> &'static str {
+        IDENTIFIER
+    }
+
     /// Tries to identify AWS using all the implemented options.
-    async fn identify(&self) -> bool {
+    async fn identify(&self, tx: Sender<&'static str>) {
         info!("Checking Amazon Web Services");
-        self.check_vendor_file().await || self.check_metadata_server().await
+        if self.check_vendor_file().await || self.check_metadata_server().await {
+            tx.send(IDENTIFIER).await.unwrap();
+        };
     }
 }
 
