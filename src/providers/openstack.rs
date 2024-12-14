@@ -1,18 +1,15 @@
 //! OpenStack.
 
+use async_trait::async_trait;
 use std::fs;
 use std::path::Path;
-use async_trait::async_trait;
 use tracing::{debug, error, Level};
 
 use crate::Provider;
 
 const METADATA_URL: &str = "http://169.254.169.254/openstack/";
 const PRODUCT_NAME_FILE: &str = "/sys/class/dmi/id/product_name";
-const PRODUCT_NAMES: [&str; 2] = [
-    "Openstack Nova",
-    "OpenStack Compute",
-];
+const PRODUCT_NAMES: [&str; 2] = ["Openstack Nova", "OpenStack Compute"];
 const CHASSIS_ASSET_TAG_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
 const CHASSIS_ASSET_TAGS: [&str; 5] = [
     "HUAWEICLOUD",
@@ -71,13 +68,19 @@ impl Provider for OpenStack {
             }
         }
 
-        debug!("Checking {} vendor file: {}", IDENTIFIER, CHASSIS_ASSET_TAG_FILE);
+        debug!(
+            "Checking {} vendor file: {}",
+            IDENTIFIER, CHASSIS_ASSET_TAG_FILE
+        );
         let chassis_asset_tag_file = Path::new(CHASSIS_ASSET_TAG_FILE);
 
         if chassis_asset_tag_file.is_file() {
             match fs::read_to_string(chassis_asset_tag_file) {
                 Ok(content) => {
-                    if CHASSIS_ASSET_TAGS.iter().any(|&name| content.contains(name)) {
+                    if CHASSIS_ASSET_TAGS
+                        .iter()
+                        .any(|&name| content.contains(name))
+                    {
                         return true;
                     }
                 }
