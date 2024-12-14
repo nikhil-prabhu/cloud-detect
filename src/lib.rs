@@ -30,12 +30,12 @@ static PROVIDERS: LazyLock<Mutex<HashMap<&'static str, Arc<dyn Provider + Send +
 #[macro_export]
 macro_rules! register_provider {
     ($id:expr, $provider:expr) => {{
-        use std::sync::Arc;
+        use std::sync::Arc as _Arc;
 
-        use crate::PROVIDERS;
+        use crate::PROVIDERS as _PROVIDERS;
 
-        let mut providers = PROVIDERS.lock().unwrap();
-        providers.insert($id, Arc::new($provider));
+        let mut providers = _PROVIDERS.lock().unwrap();
+        providers.insert($id, _Arc::new($provider));
     }};
 }
 
