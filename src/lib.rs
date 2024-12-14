@@ -23,8 +23,20 @@ pub trait Provider {
     async fn check_vendor_file(&self) -> bool;
 }
 
-/// The list of currently supported providers.
-pub const SUPPORTED_PROVIDERS: [&str; 8] = [
+macro_rules! count_exprs {
+    () => { 0 };
+    ($head:expr) => { 1 };
+    ($head:expr, $($tail:expr),*) => { 1 + count_exprs!($($tail),*) };
+}
+
+macro_rules! register_providers {
+    ($($name:expr),*) => {
+        /// The list of currently supported providers.
+        pub const SUPPORTED_PROVIDERS: [&str; count_exprs!($($name),*)] = [$($name),*];
+    };
+}
+
+register_providers!(
     aws::IDENTIFIER,
     azure::IDENTIFIER,
     gcp::IDENTIFIER,
@@ -32,8 +44,8 @@ pub const SUPPORTED_PROVIDERS: [&str; 8] = [
     openstack::IDENTIFIER,
     digitalocean::IDENTIFIER,
     oci::IDENTIFIER,
-    vultr::IDENTIFIER,
-];
+    vultr::IDENTIFIER
+);
 
 /// Convenience function that identifies a [`Provider`] using the [`Provider::check_metadata_server`]
 /// and [`Provider::check_vendor_file`] methods.
