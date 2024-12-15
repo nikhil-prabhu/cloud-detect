@@ -1,3 +1,48 @@
+//! # Cloud Detect
+//!
+//! A library to detect the cloud service provider of a host.
+//!
+//! ## Usage
+//!
+//! Add the following to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! cloud_detect = "1.1.0"
+//! tokio = { version = "1", features = ["full"] }
+//! tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging
+//! ```
+//!
+//! ## Examples
+//!
+//! Detect the cloud provider and print the result (with default timeout).
+//!
+//! ```rust
+//! use cloud_detect::detect;
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!    tracing_subscriber::fmt::init(); // Optional; for logging
+//!
+//!    let provider = detect(None).await;
+//!    println!("Detected provider: {}", provider);
+//! }
+//! ```
+//!
+//! Detect the cloud provider and print the result (with custom timeout).
+//!
+//! ```rust
+//! use cloud_detect::detect;
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!   tracing_subscriber::fmt::init(); // Optional; for logging
+//!
+//!   let provider = detect(Some(10)).await;
+//!   println!("Detected provider: {}", provider);
+//! }
+//! ```
+
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
