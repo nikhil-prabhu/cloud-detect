@@ -1,9 +1,9 @@
 //! Google Cloud Platform (GCP).
 
-use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
+use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
@@ -59,7 +59,7 @@ impl GCP {
         let vendor_file = Path::new(VENDOR_FILE);
 
         if vendor_file.is_file() {
-            return match fs::read_to_string(vendor_file) {
+            return match fs::read_to_string(vendor_file).await {
                 Ok(content) => content.contains("Google"),
                 Err(err) => {
                     error!("Error reading file: {:?}", err);

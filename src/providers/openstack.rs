@@ -1,9 +1,9 @@
 //! OpenStack.
 
-use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
+use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
@@ -71,7 +71,7 @@ impl OpenStack {
         let product_name_file = Path::new(PRODUCT_NAME_FILE);
 
         if product_name_file.is_file() {
-            match fs::read_to_string(product_name_file) {
+            match fs::read_to_string(product_name_file).await {
                 Ok(content) => {
                     if PRODUCT_NAMES.iter().any(|&name| content.contains(name)) {
                         return true;
@@ -90,7 +90,7 @@ impl OpenStack {
         let chassis_asset_tag_file = Path::new(CHASSIS_ASSET_TAG_FILE);
 
         if chassis_asset_tag_file.is_file() {
-            match fs::read_to_string(chassis_asset_tag_file) {
+            match fs::read_to_string(chassis_asset_tag_file).await {
                 Ok(content) => {
                     if CHASSIS_ASSET_TAGS
                         .iter()

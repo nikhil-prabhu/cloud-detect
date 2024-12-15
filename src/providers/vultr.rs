@@ -1,10 +1,10 @@
 //! Vultr.
 
-use std::fs;
 use std::path::Path;
 
 use async_trait::async_trait;
 use serde::Deserialize;
+use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
@@ -52,15 +52,13 @@ impl Vultr {
             IDENTIFIER, METADATA_URL
         );
         match reqwest::get(METADATA_URL).await {
-            Ok(resp) => {
-                return match resp.json::<MetadataResponse>().await {
-                    Ok(resp) => resp.instance_id.len() > 0,
-                    Err(err) => {
-                        error!("Error reading response: {:?}", err);
-                        false
-                    }
-                };
-            }
+            Ok(resp) => match resp.json::<MetadataResponse>().await {
+                Ok(resp) => resp.instance_id.len() > 0,
+                Err(err) => {
+                    error!("Error reading response: {:?}", err);
+                    false
+                }
+            },
             Err(err) => {
                 error!("Error making request: {:?}", err);
                 false
@@ -77,7 +75,7 @@ impl Vultr {
         let vendor_file = Path::new(VENDOR_FILE);
 
         if vendor_file.is_file() {
-            return match fs::read_to_string(vendor_file) {
+            return match fs::read_to_string(vendor_file).await {
                 Ok(content) => content.contains("Vultr"),
                 Err(err) => {
                     error!("Error reading file: {:?}", err);
