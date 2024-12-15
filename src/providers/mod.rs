@@ -1,10 +1,10 @@
 //! Provider modules.
 
-pub mod alibaba;
-pub mod aws;
-pub mod azure;
-pub mod digitalocean;
-pub mod gcp;
-pub mod oci;
-pub mod openstack;
-pub mod vultr;
+pub(crate) mod alibaba;
+pub(crate) mod aws;
+pub(crate) mod azure;
+pub(crate) mod digitalocean;
+pub(crate) mod gcp;
+pub(crate) mod oci;
+pub(crate) mod openstack;
+pub(crate) mod vultr;

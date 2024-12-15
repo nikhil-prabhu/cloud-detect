@@ -10,9 +10,10 @@ use tracing::{debug, Level};
 
 use crate::providers::*;
 
-pub mod providers;
+pub(crate) mod providers;
 
-pub const DETECTION_TIMEOUT: u64 = 5; // seconds
+/// Maximum time allowed for detection.
+pub const DEFAULT_DETECTION_TIMEOUT: u64 = 5; // seconds
 
 /// Represents an identifier for a cloud service provider.
 #[non_exhaustive]
@@ -50,7 +51,7 @@ pub enum ProviderId {
 
 /// Represents a cloud service provider.
 #[async_trait]
-pub trait Provider: Send + Sync {
+pub(crate) trait Provider: Send + Sync {
     fn identifier(&self) -> ProviderId;
     async fn identify(&self, tx: Sender<ProviderId>);
 }
@@ -87,11 +88,11 @@ pub fn supported_providers() -> Vec<String> {
 ///
 /// # Arguments
 ///
-/// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to [DETECTION_TIMEOUT](constant.DETECTION_TIMEOUT.html) if `None`.
+/// * `timeout` - Maximum time (seconds) allowed for detection. Defaults to [DEFAULT_DETECTION_TIMEOUT](constant.DEFAULT_DETECTION_TIMEOUT.html) if `None`.
 pub async fn detect(timeout: Option<u64>) -> ProviderId {
     let span = tracing::span!(Level::TRACE, "detect");
     let _enter = span.enter();
-    let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
+    let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
 
     let guard = PROVIDERS.lock().unwrap();
