@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
-use tracing::{debug, error, info, Level};
+use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
@@ -34,9 +34,11 @@ impl Provider for AWS {
     }
 
     /// Tries to identify AWS using all the implemented options.
+    #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Amazon Web Services");
         if self.check_vendor_file().await || self.check_metadata_server().await {
+            info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
 
             if let Err(err) = res {
@@ -48,10 +50,8 @@ impl Provider for AWS {
 
 impl AWS {
     /// Tries to identify AWS via metadata server.
+    #[instrument(skip_all)]
     async fn check_metadata_server(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "check_metadata_server");
-        let _enter = span.enter();
-
         debug!(
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
@@ -72,10 +72,8 @@ impl AWS {
     }
 
     /// Tries to identify AWS using vendor file(s).
+    #[instrument(skip_all)]
     async fn check_vendor_file(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "check_vendor_file");
-        let _enter = span.enter();
-
         for vendor_file in VENDOR_FILES {
             debug!("Checking {} vendor file: {}", IDENTIFIER, vendor_file);
             let vendor_file = Path::new(vendor_file);

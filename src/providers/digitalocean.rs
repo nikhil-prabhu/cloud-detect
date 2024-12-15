@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
-use tracing::{debug, error, info, Level};
+use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
@@ -28,9 +28,11 @@ impl Provider for DigitalOcean {
     }
 
     /// Tries to identify DigitalOcean using all the implemented options.
+    #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking DigitalOcean");
         if self.check_vendor_file().await || self.check_metadata_server().await {
+            info!("Identified DigitalOcean");
             let res = tx.send(IDENTIFIER).await;
 
             if let Err(err) = res {
@@ -42,10 +44,8 @@ impl Provider for DigitalOcean {
 
 impl DigitalOcean {
     /// Tries to identify DigitalOcean via metadata server.
+    #[instrument(skip_all)]
     async fn check_metadata_server(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "check_metadata_server");
-        let _enter = span.enter();
-
         debug!(
             "Checking {} metadata using url: {}",
             IDENTIFIER, METADATA_URL
@@ -68,10 +68,8 @@ impl DigitalOcean {
     }
 
     /// Tries to identify DigitalOcean using vendor file(s).
+    #[instrument(skip_all)]
     async fn check_vendor_file(&self) -> bool {
-        let span = tracing::span!(Level::TRACE, "check_vendor_file");
-        let _enter = span.enter();
-
         debug!("Checking {} vendor file: {}", IDENTIFIER, VENDOR_FILE);
         let vendor_file = Path::new(VENDOR_FILE);
 

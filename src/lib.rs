@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
@@ -6,7 +7,7 @@ use async_trait::async_trait;
 use strum::Display;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Notify};
-use tracing::{debug, Level};
+use tracing::{debug, instrument};
 
 use crate::providers::*;
 
@@ -89,9 +90,8 @@ pub fn supported_providers() -> Vec<String> {
 /// # Arguments
 ///
 /// * `timeout` - Maximum time (seconds) allowed for detection. Defaults to [DEFAULT_DETECTION_TIMEOUT](constant.DEFAULT_DETECTION_TIMEOUT.html) if `None`.
+#[instrument]
 pub async fn detect(timeout: Option<u64>) -> ProviderId {
-    let span = tracing::span!(Level::TRACE, "detect");
-    let _enter = span.enter();
     let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
 
