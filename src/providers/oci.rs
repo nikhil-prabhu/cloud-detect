@@ -3,14 +3,22 @@
 use std::path::Path;
 
 use async_trait::async_trait;
+use serde::Deserialize;
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
+const METADATA_URL: &str = "http://169.254.169.254/opc/v1/instance/metadata/";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
 pub const IDENTIFIER: ProviderId = ProviderId::OCI;
+
+#[derive(Deserialize)]
+struct MetadataResponse {
+    #[serde(rename = "oke-tm")]
+    oke_tm: String,
+}
 
 pub struct OCI;
 
@@ -24,7 +32,7 @@ impl Provider for OCI {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Oracle Cloud Infrastructure");
-        if self.check_vendor_file().await {
+        if self.check_vendor_file().await || self.check_metadata_server().await {
             info!("Identified Oracle Cloud Infrastructure");
             let res = tx.send(IDENTIFIER).await;
 
@@ -36,6 +44,29 @@ impl Provider for OCI {
 }
 
 impl OCI {
+    /// Tries to identify OCI via metadata server.
+    #[instrument(skip_all)]
+    async fn check_metadata_server(&self) -> bool {
+        debug!(
+            "Checking {} metadata using url: {}",
+            IDENTIFIER, METADATA_URL
+        );
+
+        match reqwest::get(METADATA_URL).await {
+            Ok(resp) => match resp.json::<MetadataResponse>().await {
+                Ok(resp) => resp.oke_tm.contains("oke"),
+                Err(err) => {
+                    error!("Error reading response: {:?}", err);
+                    false
+                }
+            },
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                false
+            }
+        }
+    }
+
     /// Tries to identify OCI using vendor file(s).
     #[instrument(skip_all)]
     async fn check_vendor_file(&self) -> bool {
