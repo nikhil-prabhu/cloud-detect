@@ -73,6 +73,17 @@ static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
 });
 
 /// Returns a list of currently supported providers.
+///
+/// # Examples
+///
+/// Print the list of supported providers.
+///
+/// ```
+/// use cloud_detect::supported_providers;
+///
+/// let providers = supported_providers();
+/// println!("Supported providers: {:?}", providers);
+/// ```
 pub fn supported_providers() -> Vec<String> {
     let guard = PROVIDERS.lock().unwrap();
     let providers: Vec<String> = guard.iter().map(|p| p.identifier().to_string()).collect();
@@ -90,6 +101,32 @@ pub fn supported_providers() -> Vec<String> {
 /// # Arguments
 ///
 /// * `timeout` - Maximum time (seconds) allowed for detection. Defaults to [DEFAULT_DETECTION_TIMEOUT](constant.DEFAULT_DETECTION_TIMEOUT.html) if `None`.
+///
+/// # Examples
+///
+/// Detect the cloud provider and print the result (with default timeout).
+///
+/// ```
+/// use cloud_detect::detect;
+///
+/// #[tokio::main]
+/// async fn main() {
+///    let provider = detect(None).await;
+///    println!("Detected provider: {}", provider);
+/// }
+/// ```
+///
+/// Detect the cloud provider and print the result (with custom timeout).
+///
+/// ```
+/// use cloud_detect::detect;
+///
+/// #[tokio::main]
+/// async fn main() {
+///   let provider = detect(Some(10)).await;
+///   println!("Detected provider: {}", provider);
+/// }
+/// ```
 #[instrument]
 pub async fn detect(timeout: Option<u64>) -> ProviderId {
     let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
