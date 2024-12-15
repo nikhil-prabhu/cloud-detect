@@ -1,18 +1,18 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
 use strum::Display;
-use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
-use tokio::time::timeout as tokio_timeout;
+use tokio::sync::{mpsc, Notify};
 use tracing::{debug, Level};
 
 use crate::providers::*;
 
 pub mod providers;
 
-const DETECTION_TIMEOUT: u64 = 5; // seconds
+pub const DETECTION_TIMEOUT: u64 = 5; // seconds
 
 /// Represents an identifier for a cloud service provider.
 #[non_exhaustive]
@@ -87,36 +87,60 @@ pub fn supported_providers() -> Vec<String> {
 ///
 /// # Arguments
 ///
-/// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to 5 if `None`.
+/// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to [DETECTION_TIMEOUT](constant.DETECTION_TIMEOUT.html) if `None`.
 pub async fn detect(timeout: Option<u64>) -> ProviderId {
     let span = tracing::span!(Level::TRACE, "detect");
     let _enter = span.enter();
-
     let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
 
     let guard = PROVIDERS.lock().unwrap();
+    let provider_entries: Vec<P> = guard.iter().map(|p| p.clone()).collect();
+    drop(guard);
 
-    // Collect the Arc<dyn Provider> values
-    let provider_entries: Vec<P> = guard
-        .iter()
-        .map(|p| p.clone()) // Clone the Arc
-        .collect();
+    let providers_count = provider_entries.len();
+    let mut handles = Vec::with_capacity(providers_count);
 
-    drop(guard); // Explicitly drop the lock
+    // Create a counter that will be decremented as tasks complete
+    let counter = Arc::new(AtomicUsize::new(providers_count));
+    let complete = Arc::new(Notify::new());
 
     for provider in provider_entries {
         let tx = tx.clone();
+        let counter = counter.clone();
+        let complete = complete.clone();
 
-        debug!("Spawning task for provider: {}", provider.identifier());
-        tokio::spawn(async move {
+        handles.push(tokio::spawn(async move {
+            debug!("Spawning task for provider: {}", provider.identifier());
             provider.identify(tx).await;
-        });
+
+            // Decrement counter and notify if we're the last task
+            if counter.fetch_sub(1, Ordering::SeqCst) == 1 {
+                complete.notify_one();
+            }
+        }));
     }
 
-    match tokio_timeout(timeout, rx.recv()).await {
-        Ok(Some(provider)) => provider,
-        _ => Default::default(),
+    tokio::select! {
+        biased;
+
+        // Priority 1: If we receive an identifier, return it immediately
+        res = rx.recv() => {
+            debug!("Received result from channel: {:?}", res);
+            res.unwrap_or_default()
+        }
+
+        // Priority 2: If all tasks complete without finding an identifier
+        _ = complete.notified() => {
+            debug!("All providers have finished identifying");
+            Default::default()
+        }
+
+        // Priority 3: If we time out
+        _ = tokio::time::sleep(timeout) => {
+            debug!("Detection timed out");
+            Default::default()
+        }
     }
 }
 
