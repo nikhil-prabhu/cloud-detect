@@ -7,7 +7,7 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const METADATA_URL: &str = "http://169.254.169.254/openstack/";
 const PRODUCT_NAME_FILE: &str = "/sys/class/dmi/id/product_name";
@@ -20,18 +20,18 @@ const CHASSIS_ASSET_TAGS: [&str; 5] = [
     "OpenStack Nova",
     "OpenStack Compute",
 ];
-pub const IDENTIFIER: &str = "openstack";
+pub const IDENTIFIER: ProviderId = ProviderId::OpenStack;
 
 pub struct OpenStack;
 
 #[async_trait]
 impl Provider for OpenStack {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify OpenStack using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking OpenStack");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

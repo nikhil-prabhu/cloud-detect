@@ -7,22 +7,22 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const METADATA_URL: &str = "http://metadata.google.internal/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-pub const IDENTIFIER: &str = "gcp";
+pub const IDENTIFIER: ProviderId = ProviderId::GCP;
 
 pub struct GCP;
 
 #[async_trait]
 impl Provider for GCP {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify GCP using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Google Cloud Platform");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

@@ -7,21 +7,21 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const VENDOR_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
-pub const IDENTIFIER: &str = "oci";
+pub const IDENTIFIER: ProviderId = ProviderId::OCI;
 
 pub struct OCI;
 
 #[async_trait]
 impl Provider for OCI {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify OCI using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Oracle Cloud Infrastructure");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

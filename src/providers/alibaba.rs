@@ -7,23 +7,23 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const METADATA_URL: &str =
     "http://100.100.100.200/latest/meta-data/latest/meta-data/instance/virtualization-solution";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-pub const IDENTIFIER: &str = "alibaba";
+pub const IDENTIFIER: ProviderId = ProviderId::Alibaba;
 
 pub struct Alibaba;
 
 #[async_trait]
 impl Provider for Alibaba {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify Alibaba using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Alibaba Cloud");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

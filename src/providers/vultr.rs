@@ -8,11 +8,11 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const METADATA_URL: &str = "http://169.254.169.254/v1.json";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
-pub const IDENTIFIER: &str = "vultr";
+pub const IDENTIFIER: ProviderId = ProviderId::Vultr;
 
 pub struct Vultr;
 
@@ -24,12 +24,12 @@ struct MetadataResponse {
 
 #[async_trait]
 impl Provider for Vultr {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify Vultr using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Vultr");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

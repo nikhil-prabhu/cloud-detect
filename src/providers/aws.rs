@@ -8,14 +8,14 @@ use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, Level};
 
-use crate::Provider;
+use crate::{Provider, ProviderId};
 
 const METADATA_URL: &str = "http://169.254.169.254/latest/dynamic/instance-identity/document";
 const VENDOR_FILES: [&str; 2] = [
     "/sys/class/dmi/id/product_version",
     "/sys/class/dmi/id/bios_vendor",
 ];
-pub const IDENTIFIER: &str = "aws";
+pub const IDENTIFIER: ProviderId = ProviderId::AWS;
 
 #[derive(Deserialize)]
 struct MetadataResponse {
@@ -29,12 +29,12 @@ pub struct AWS;
 
 #[async_trait]
 impl Provider for AWS {
-    fn identifier(&self) -> &'static str {
+    fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
 
     /// Tries to identify AWS using all the implemented options.
-    async fn identify(&self, tx: Sender<&'static str>) {
+    async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Amazon Web Services");
         if self.check_vendor_file().await || self.check_metadata_server().await {
             let res = tx.send(IDENTIFIER).await;

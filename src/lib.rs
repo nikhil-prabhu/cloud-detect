@@ -2,6 +2,7 @@ use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
+use strum::Display;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 use tokio::time::timeout as tokio_timeout;
@@ -11,14 +12,47 @@ use crate::providers::*;
 
 pub mod providers;
 
-const UNKNOWN_PROVIDER: &str = "unknown";
 const DETECTION_TIMEOUT: u64 = 5; // seconds
+
+/// Represents an identifier for a cloud service provider.
+#[non_exhaustive]
+#[derive(Debug, Default, Display, Eq, PartialEq)]
+pub enum ProviderId {
+    /// Unknown cloud service provider.
+    #[default]
+    #[strum(serialize = "unknown")]
+    Unknown,
+    /// Alibaba Cloud.
+    #[strum(serialize = "alibaba")]
+    Alibaba,
+    /// Amazon Web Services (AWS).
+    #[strum(serialize = "aws")]
+    AWS,
+    /// Microsoft Azure.
+    #[strum(serialize = "azure")]
+    Azure,
+    /// DigitalOcean.
+    #[strum(serialize = "digitalocean")]
+    DigitalOcean,
+    /// Google Cloud Platform (GCP).
+    #[strum(serialize = "gcp")]
+    GCP,
+    /// Oracle Cloud Infrastructure (OCI).
+    #[strum(serialize = "oci")]
+    OCI,
+    /// OpenStack.
+    #[strum(serialize = "openstack")]
+    OpenStack,
+    /// Vultr.
+    #[strum(serialize = "vultr")]
+    Vultr,
+}
 
 /// Represents a cloud service provider.
 #[async_trait]
 pub trait Provider: Send + Sync {
-    fn identifier(&self) -> &'static str;
-    async fn identify(&self, tx: Sender<&'static str>);
+    fn identifier(&self) -> ProviderId;
+    async fn identify(&self, tx: Sender<ProviderId>);
 }
 
 type P = Arc<dyn Provider>;
@@ -36,10 +70,10 @@ static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
     ])
 });
 
-/// Returns a list of supported providers.
-pub fn supported_providers() -> Vec<&'static str> {
+/// Returns a list of currently supported providers.
+pub fn supported_providers() -> Vec<String> {
     let guard = PROVIDERS.lock().unwrap();
-    let providers: Vec<&'static str> = guard.iter().map(|p| p.identifier()).collect();
+    let providers: Vec<String> = guard.iter().map(|p| p.identifier().to_string()).collect();
 
     drop(guard);
 
@@ -48,18 +82,18 @@ pub fn supported_providers() -> Vec<&'static str> {
 
 /// Detects the host's cloud provider.
 ///
-/// Returns "unknown" if the detection failed or timed out. If the detection was successful, it returns
-/// a value from [`supported_providers`](fn.supported_providers.html).
+/// Returns [ProviderId::Unknown] if the detection failed or timed out. If the detection was successful, it returns
+/// a value from [ProviderId](enum.ProviderId.html).
 ///
 /// # Arguments
 ///
 /// * `timeout` - Maximum time(seconds) allowed for detection. Defaults to 5 if `None`.
-pub async fn detect(timeout: Option<u64>) -> &'static str {
+pub async fn detect(timeout: Option<u64>) -> ProviderId {
     let span = tracing::span!(Level::TRACE, "detect");
     let _enter = span.enter();
 
     let timeout = Duration::from_secs(timeout.unwrap_or(DETECTION_TIMEOUT));
-    let (tx, mut rx) = mpsc::channel::<&str>(1);
+    let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
 
     let guard = PROVIDERS.lock().unwrap();
 
@@ -82,7 +116,7 @@ pub async fn detect(timeout: Option<u64>) -> &'static str {
 
     match tokio_timeout(timeout, rx.recv()).await {
         Ok(Some(provider)) => provider,
-        _ => UNKNOWN_PROVIDER,
+        _ => Default::default(),
     }
 }
 
@@ -94,20 +128,20 @@ mod tests {
     async fn test_supported_providers() {
         let providers = supported_providers();
         assert_eq!(providers.len(), 8);
-        assert!(providers.contains(&alibaba::IDENTIFIER));
-        assert!(providers.contains(&aws::IDENTIFIER));
-        assert!(providers.contains(&azure::IDENTIFIER));
-        assert!(providers.contains(&digitalocean::IDENTIFIER));
-        assert!(providers.contains(&gcp::IDENTIFIER));
-        assert!(providers.contains(&oci::IDENTIFIER));
-        assert!(providers.contains(&openstack::IDENTIFIER));
-        assert!(providers.contains(&vultr::IDENTIFIER));
+        assert!(providers.contains(&alibaba::IDENTIFIER.to_string()));
+        assert!(providers.contains(&aws::IDENTIFIER.to_string()));
+        assert!(providers.contains(&azure::IDENTIFIER.to_string()));
+        assert!(providers.contains(&digitalocean::IDENTIFIER.to_string()));
+        assert!(providers.contains(&gcp::IDENTIFIER.to_string()));
+        assert!(providers.contains(&oci::IDENTIFIER.to_string()));
+        assert!(providers.contains(&openstack::IDENTIFIER.to_string()));
+        assert!(providers.contains(&vultr::IDENTIFIER.to_string()));
     }
 
     // FIXME: This test will fail on actual cloud instances.
     #[tokio::test]
     async fn test_detect() {
         let provider = detect(None).await;
-        assert_eq!(provider, UNKNOWN_PROVIDER);
+        assert_eq!(provider, Default::default());
     }
 }
