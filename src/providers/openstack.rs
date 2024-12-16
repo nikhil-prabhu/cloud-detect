@@ -117,3 +117,80 @@ impl OpenStack {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::path;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = OpenStack;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = OpenStack;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut product_name_file = NamedTempFile::new()?;
+        let mut chassis_asset_tag_file = NamedTempFile::new()?;
+
+        product_name_file.write_all(PRODUCT_NAMES[0].as_bytes())?;
+        chassis_asset_tag_file.write_all(CHASSIS_ASSET_TAGS[0].as_bytes())?;
+
+        let provider = OpenStack;
+        let result = provider
+            .check_vendor_files(product_name_file.path(), chassis_asset_tag_file.path())
+            .await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let product_name_file = NamedTempFile::new()?;
+        let chassis_asset_tag_file = NamedTempFile::new()?;
+
+        let provider = OpenStack;
+        let result = provider
+            .check_vendor_files(product_name_file.path(), chassis_asset_tag_file.path())
+            .await;
+
+        assert!(!result);
+
+        Ok(())
+    }
+}

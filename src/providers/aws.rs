@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, instrument};
@@ -18,7 +18,7 @@ const VENDOR_FILES: [&str; 2] = [
 ];
 pub const IDENTIFIER: ProviderId = ProviderId::AWS;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct MetadataResponse {
     #[serde(rename = "imageId")]
     image_id: String,
@@ -99,5 +99,88 @@ impl Aws {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::path;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                image_id: "ami-123abc".to_string(),
+                instance_id: "i-123abc".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Aws;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                image_id: "abc".to_string(),
+                instance_id: "abc".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Aws;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut product_version_file = NamedTempFile::new()?;
+        let mut bios_vendor_file = NamedTempFile::new()?;
+
+        product_version_file.write_all("amazon".as_bytes())?;
+        bios_vendor_file.write_all("amazon".as_bytes())?;
+
+        let provider = Aws;
+        let result = provider
+            .check_vendor_files(vec![product_version_file.path(), bios_vendor_file.path()])
+            .await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let product_version_file = NamedTempFile::new()?;
+        let bios_vendor_file = NamedTempFile::new()?;
+
+        let provider = Aws;
+        let result = provider
+            .check_vendor_files(vec![product_version_file.path(), bios_vendor_file.path()])
+            .await;
+
+        assert!(!result);
+
+        Ok(())
     }
 }

@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, instrument};
@@ -15,7 +15,7 @@ const METADATA_PATH: &str = "/opc/v1/instance/metadata/";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
 pub const IDENTIFIER: ProviderId = ProviderId::OCI;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct MetadataResponse {
     #[serde(rename = "oke-tm")]
     oke_tm: String,
@@ -88,5 +88,78 @@ impl Oci {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::path;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                oke_tm: "oke".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Oci;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                oke_tm: "abc".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Oci;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut vendor_file = NamedTempFile::new()?;
+        vendor_file.write_all("OracleCloud".as_bytes())?;
+
+        let provider = Oci;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let vendor_file = NamedTempFile::new()?;
+
+        let provider = Oci;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(!result);
+
+        Ok(())
     }
 }

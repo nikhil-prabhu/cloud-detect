@@ -83,3 +83,72 @@ impl Alibaba {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::path;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_string("ECS Virt"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Alibaba;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_string("ABC"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Alibaba;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut vendor_file = NamedTempFile::new()?;
+        vendor_file.write_all("Alibaba Cloud ECS".as_bytes())?;
+
+        let provider = Alibaba;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let vendor_file = NamedTempFile::new()?;
+
+        let provider = Alibaba;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(!result);
+
+        Ok(())
+    }
+}

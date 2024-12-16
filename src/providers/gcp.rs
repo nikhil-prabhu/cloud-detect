@@ -48,8 +48,15 @@ impl Gcp {
 
         let client = reqwest::Client::new();
         let req = client.get(url).header("Metadata-Flavor", "Google");
+        let resp = req.send().await;
 
-        req.send().await.is_ok()
+        match resp {
+            Ok(resp) => resp.status().is_success(),
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                false
+            }
+        }
     }
 
     /// Tries to identify GCP using vendor file(s).
@@ -72,5 +79,74 @@ impl Gcp {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::path;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Gcp;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Gcp;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut vendor_file = NamedTempFile::new()?;
+        vendor_file.write_all("Google".as_bytes())?;
+
+        let provider = Gcp;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let vendor_file = NamedTempFile::new()?;
+
+        let provider = Gcp;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(!result);
+
+        Ok(())
     }
 }

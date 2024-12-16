@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use async_trait::async_trait;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::sync::mpsc::Sender;
 use tracing::{debug, error, info, instrument};
@@ -15,13 +15,13 @@ const METADATA_PATH: &str = "/metadata/instance?api-version=2017-12-01";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
 pub const IDENTIFIER: ProviderId = ProviderId::Azure;
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Compute {
     #[serde(rename = "vmId")]
     vm_id: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct MetadataResponse {
     compute: Compute,
 }
@@ -96,5 +96,82 @@ impl Azure {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use anyhow::Result;
+    use tempfile::NamedTempFile;
+    use wiremock::matchers::query_param;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+        Mock::given(query_param("api-version", "2017-12-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                compute: Compute {
+                    vm_id: "vm-123abc".to_string(),
+                },
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Azure;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+        Mock::given(query_param("api-version", "2017-12-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                compute: Compute {
+                    vm_id: "".to_string(),
+                },
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Azure;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_success() -> Result<()> {
+        let mut vendor_file = NamedTempFile::new()?;
+        vendor_file.write_all("Microsoft Corporation".as_bytes())?;
+
+        let provider = Azure;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_vendor_file_failure() -> Result<()> {
+        let vendor_file = NamedTempFile::new()?;
+
+        let provider = Azure;
+        let result = provider.check_vendor_file(vendor_file.path()).await;
+
+        assert!(!result);
+
+        Ok(())
     }
 }
