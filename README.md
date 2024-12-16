@@ -4,10 +4,6 @@
 [![crates-badge](https://img.shields.io/crates/v/cloud-detect.svg)](https://crates.io/crates/cloud-detect)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-<p align="center">
-  <img  src="assets/logo.png" alt="Pylon Logo">
-</p>
-
 A Rust library to detect the cloud service provider of a host.
 
 This library is inspired by the Python-based [cloud-detect](https://github.com/dgzlopes/cloud-detect)
