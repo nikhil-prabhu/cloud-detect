@@ -14,10 +14,10 @@ const METADATA_PATH: &str = "/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
 pub const IDENTIFIER: ProviderId = ProviderId::GCP;
 
-pub struct GCP;
+pub struct Gcp;
 
 #[async_trait]
-impl Provider for GCP {
+impl Provider for Gcp {
     fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
@@ -39,7 +39,7 @@ impl Provider for GCP {
     }
 }
 
-impl GCP {
+impl Gcp {
     /// Tries to identify GCP via metadata server.
     #[instrument(skip_all)]
     async fn check_metadata_server(&self, metadata_uri: &str) -> bool {

@@ -55,7 +55,7 @@ impl Vultr {
 
         match reqwest::get(url).await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
-                Ok(resp) => resp.instance_id.len() > 0,
+                Ok(resp) => !resp.instance_id.is_empty(),
                 Err(err) => {
                     error!("Error reading response: {:?}", err);
                     false

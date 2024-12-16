@@ -63,7 +63,7 @@ impl Azure {
 
         match req.send().await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
-                Ok(resp) => resp.compute.vm_id.len() > 0,
+                Ok(resp) => !resp.compute.vm_id.is_empty(),
                 Err(err) => {
                     error!("Error reading response: {:?}", err);
                     false

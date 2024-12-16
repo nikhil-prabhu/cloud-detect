@@ -46,13 +46,13 @@
 
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
 use async_trait::async_trait;
 use strum::Display;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::{mpsc, Notify};
+use tokio::sync::{mpsc, Mutex, Notify};
 use tracing::{debug, instrument};
 
 use crate::providers::*;
@@ -108,11 +108,11 @@ type P = Arc<dyn Provider>;
 static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
     Mutex::new(vec![
         Arc::new(alibaba::Alibaba) as P,
-        Arc::new(aws::AWS) as P,
+        Arc::new(aws::Aws) as P,
         Arc::new(azure::Azure) as P,
         Arc::new(digitalocean::DigitalOcean) as P,
-        Arc::new(gcp::GCP) as P,
-        Arc::new(oci::OCI) as P,
+        Arc::new(gcp::Gcp) as P,
+        Arc::new(oci::Oci) as P,
         Arc::new(openstack::OpenStack) as P,
         Arc::new(vultr::Vultr) as P,
     ])
@@ -127,11 +127,14 @@ static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
 /// ```
 /// use cloud_detect::supported_providers;
 ///
-/// let providers = supported_providers();
-/// println!("Supported providers: {:?}", providers);
+/// #[tokio::main]
+/// async fn main() {
+///     let providers = supported_providers().await;
+///     println!("Supported providers: {:?}", providers);
+/// }
 /// ```
-pub fn supported_providers() -> Vec<String> {
-    let guard = PROVIDERS.lock().unwrap();
+pub async fn supported_providers() -> Vec<String> {
+    let guard = PROVIDERS.lock().await;
     let providers: Vec<String> = guard.iter().map(|p| p.identifier().to_string()).collect();
 
     drop(guard);
@@ -177,11 +180,8 @@ pub fn supported_providers() -> Vec<String> {
 pub async fn detect(timeout: Option<u64>) -> ProviderId {
     let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
     let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
-
-    let guard = PROVIDERS.lock().unwrap();
-    let provider_entries: Vec<P> = guard.iter().map(|p| p.clone()).collect();
-    drop(guard);
-
+    let guard = PROVIDERS.lock().await;
+    let provider_entries: Vec<P> = guard.iter().cloned().collect();
     let providers_count = provider_entries.len();
     let mut handles = Vec::with_capacity(providers_count);
 
@@ -234,7 +234,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_supported_providers() {
-        let providers = supported_providers();
+        let providers = supported_providers().await;
         assert_eq!(providers.len(), 8);
         assert!(providers.contains(&alibaba::IDENTIFIER.to_string()));
         assert!(providers.contains(&aws::IDENTIFIER.to_string()));

@@ -21,10 +21,10 @@ struct MetadataResponse {
     oke_tm: String,
 }
 
-pub struct OCI;
+pub struct Oci;
 
 #[async_trait]
-impl Provider for OCI {
+impl Provider for Oci {
     fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
@@ -46,7 +46,7 @@ impl Provider for OCI {
     }
 }
 
-impl OCI {
+impl Oci {
     /// Tries to identify OCI via metadata server.
     #[instrument(skip_all)]
     async fn check_metadata_server(&self, metadata_uri: &str) -> bool {

@@ -26,10 +26,10 @@ struct MetadataResponse {
     instance_id: String,
 }
 
-pub struct AWS;
+pub struct Aws;
 
 #[async_trait]
-impl Provider for AWS {
+impl Provider for Aws {
     fn identifier(&self) -> ProviderId {
         IDENTIFIER
     }
@@ -51,7 +51,7 @@ impl Provider for AWS {
     }
 }
 
-impl AWS {
+impl Aws {
     /// Tries to identify AWS via metadata server.
     #[instrument(skip_all)]
     async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
