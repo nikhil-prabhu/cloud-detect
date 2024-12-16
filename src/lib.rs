@@ -245,11 +245,4 @@ mod tests {
         assert!(providers.contains(&openstack::IDENTIFIER.to_string()));
         assert!(providers.contains(&vultr::IDENTIFIER.to_string()));
     }
-
-    // FIXME: This test will fail on actual cloud instances.
-    #[tokio::test]
-    async fn test_detect() {
-        let provider = detect(Some(1)).await;
-        assert_eq!(provider, Default::default());
-    }
 }
