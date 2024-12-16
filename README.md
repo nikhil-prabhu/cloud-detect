@@ -35,7 +35,7 @@ First, add the library to your project by adding the following to your `Cargo.to
 ```toml
 [dependencies]
 # ...
-cloud-detect = "1"
+cloud-detect = "2"
 tokio = { version = "1", features = ["full"] }
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }# Optional; for logging.
 ```
