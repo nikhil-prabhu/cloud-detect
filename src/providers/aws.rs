@@ -12,6 +12,7 @@ use crate::{Provider, ProviderId};
 
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
+const METADATA_TOKEN_PATH: &str = "/latest/api/token";
 const VENDOR_FILES: [&str; 2] = [
     "/sys/class/dmi/id/product_version",
     "/sys/class/dmi/id/bios_vendor",
@@ -39,7 +40,8 @@ impl Provider for Aws {
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Amazon Web Services");
         if self.check_vendor_files(VENDOR_FILES).await
-            || self.check_metadata_server(METADATA_URI).await
+            || self.check_metadata_server_imdsv2(METADATA_URI).await
+            || self.check_metadata_server_imdsv1(METADATA_URI).await
         {
             info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
@@ -52,9 +54,68 @@ impl Provider for Aws {
 }
 
 impl Aws {
-    /// Tries to identify AWS via metadata server.
+    /// Tries to identify AWS via metadata server (using IMDSv2).
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server_imdsv2(&self, metadata_uri: &str) -> bool {
+        let token_url = format!("{}{}", metadata_uri, METADATA_TOKEN_PATH);
+        debug!("Retrieving {} IMDSv2 token from: {}", IDENTIFIER, token_url);
+
+        let client = reqwest::Client::new();
+
+        let token = match client
+            .get(token_url)
+            .header("X-aws-ec2-metadata-token-ttl-seconds", "60")
+            .send()
+            .await
+        {
+            Ok(resp) => resp.text().await.unwrap_or_else(|err| {
+                error!("Error reading token: {:?}", err);
+                String::new()
+            }),
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                return false;
+            }
+        };
+
+        if token.is_empty() {
+            return false;
+        }
+
+        // Request to use the token to get metadata
+        let metadata_url = format!("{}{}", metadata_uri, METADATA_PATH);
+        debug!(
+            "Checking {} metadata using url: {}",
+            IDENTIFIER, metadata_url
+        );
+
+        let resp = match client
+            .get(metadata_url)
+            .header("X-aws-ec2-metadata-token", token)
+            .send()
+            .await
+        {
+            Ok(resp) => resp.json::<MetadataResponse>().await,
+            Err(err) => {
+                error!("Error making request: {:?}", err);
+                return false;
+            }
+        };
+
+        match resp {
+            Ok(metadata) => {
+                metadata.image_id.starts_with("ami-") && metadata.instance_id.starts_with("i-")
+            }
+            Err(err) => {
+                error!("Error reading response: {:?}", err);
+                false
+            }
+        }
+    }
+
+    /// Tries to identify AWS via metadata server (using IMDSv1).
+    #[instrument(skip_all)]
+    async fn check_metadata_server_imdsv1(&self, metadata_uri: &str) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
@@ -108,13 +169,66 @@ mod tests {
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use wiremock::matchers::path;
+    use wiremock::matchers::{header, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use super::*;
 
     #[tokio::test]
-    async fn test_check_metadata_server_success() {
+    async fn test_check_metadata_server_imdsv2_success() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(path(METADATA_TOKEN_PATH))
+            .and(header("X-aws-ec2-metadata-token-ttl-seconds", "60"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("123abc"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                image_id: "ami-123abc".to_string(),
+                instance_id: "i-123abc".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Aws;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server_imdsv2(&metadata_uri).await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_imdsv2_failure() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(path(METADATA_TOKEN_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_string("123abc"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                image_id: "abc".to_string(),
+                instance_id: "abc".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Aws;
+        let metadata_uri = mock_server.uri();
+        let result = provider.check_metadata_server_imdsv2(&metadata_uri).await;
+
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_imdsv1_success() {
         let mock_server = MockServer::start().await;
         Mock::given(path(METADATA_PATH))
             .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
@@ -127,13 +241,13 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider.check_metadata_server_imdsv1(&metadata_uri).await;
 
         assert!(result);
     }
 
     #[tokio::test]
-    async fn test_check_metadata_server_failure() {
+    async fn test_check_metadata_server_imdsv1_failure() {
         let mock_server = MockServer::start().await;
         Mock::given(path(METADATA_PATH))
             .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
@@ -146,7 +260,7 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider.check_metadata_server_imdsv1(&metadata_uri).await;
 
         assert!(!result);
     }
