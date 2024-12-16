@@ -10,7 +10,8 @@ use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
-const METADATA_URL: &str = "http://169.254.169.254/latest/dynamic/instance-identity/document";
+const METADATA_URI: &str = "http://169.254.169.254";
+const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
 const VENDOR_FILES: [&str; 2] = [
     "/sys/class/dmi/id/product_version",
     "/sys/class/dmi/id/bios_vendor",
@@ -37,7 +38,9 @@ impl Provider for AWS {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Amazon Web Services");
-        if self.check_vendor_file().await || self.check_metadata_server().await {
+        if self.check_vendor_files(VENDOR_FILES).await
+            || self.check_metadata_server(METADATA_URI).await
+        {
             info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
 
@@ -51,12 +54,11 @@ impl Provider for AWS {
 impl AWS {
     /// Tries to identify AWS via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self) -> bool {
-        debug!(
-            "Checking {} metadata using url: {}",
-            IDENTIFIER, METADATA_URL
-        );
-        match reqwest::get(METADATA_URL).await {
+    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
+
+        match reqwest::get(url).await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
                 Ok(resp) => resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-"),
                 Err(err) => {
@@ -73,12 +75,19 @@ impl AWS {
 
     /// Tries to identify AWS using vendor file(s).
     #[instrument(skip_all)]
-    async fn check_vendor_file(&self) -> bool {
-        for vendor_file in VENDOR_FILES {
-            debug!("Checking {} vendor file: {}", IDENTIFIER, vendor_file);
-            let vendor_file = Path::new(vendor_file);
+    async fn check_vendor_files<I>(&self, vendor_files: I) -> bool
+    where
+        I: IntoIterator,
+        I::Item: AsRef<Path>,
+    {
+        for vendor_file in vendor_files {
+            debug!(
+                "Checking {} vendor file: {}",
+                IDENTIFIER,
+                vendor_file.as_ref().display()
+            );
 
-            if vendor_file.is_file() {
+            if vendor_file.as_ref().is_file() {
                 return match fs::read_to_string(vendor_file).await {
                     Ok(content) => content.to_lowercase().contains("amazon"),
                     Err(err) => {

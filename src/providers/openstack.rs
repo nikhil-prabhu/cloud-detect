@@ -9,7 +9,8 @@ use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
-const METADATA_URL: &str = "http://169.254.169.254/openstack/";
+const METADATA_URI: &str = "http://169.254.169.254";
+const METADATA_PATH: &str = "/openstack/";
 const PRODUCT_NAME_FILE: &str = "/sys/class/dmi/id/product_name";
 const PRODUCT_NAMES: [&str; 2] = ["Openstack Nova", "OpenStack Compute"];
 const CHASSIS_ASSET_TAG_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
@@ -34,7 +35,11 @@ impl Provider for OpenStack {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking OpenStack");
-        if self.check_vendor_file().await || self.check_metadata_server().await {
+        if self
+            .check_vendor_files(PRODUCT_NAME_FILE, CHASSIS_ASSET_TAG_FILE)
+            .await
+            || self.check_metadata_server(METADATA_URI).await
+        {
             info!("Identified OpenStack");
             let res = tx.send(IDENTIFIER).await;
 
@@ -48,12 +53,11 @@ impl Provider for OpenStack {
 impl OpenStack {
     /// Tries to identify OpenStack via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self) -> bool {
-        debug!(
-            "Checking {} metadata using url: {}",
-            IDENTIFIER, METADATA_URL
-        );
-        match reqwest::get(METADATA_URL).await {
+    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
+
+        match reqwest::get(url).await {
             Ok(resp) => resp.status().is_success(),
             Err(err) => {
                 error!("Error making request: {:?}", err);
@@ -64,11 +68,18 @@ impl OpenStack {
 
     /// Tries to identify OpenStack using vendor file(s).
     #[instrument(skip_all)]
-    async fn check_vendor_file(&self) -> bool {
-        debug!("Checking {} vendor file: {}", IDENTIFIER, PRODUCT_NAME_FILE);
-        let product_name_file = Path::new(PRODUCT_NAME_FILE);
+    async fn check_vendor_files<P: AsRef<Path>>(
+        &self,
+        product_name_file: P,
+        chassis_asset_tag_file: P,
+    ) -> bool {
+        debug!(
+            "Checking {} vendor file: {}",
+            IDENTIFIER,
+            product_name_file.as_ref().display()
+        );
 
-        if product_name_file.is_file() {
+        if product_name_file.as_ref().is_file() {
             match fs::read_to_string(product_name_file).await {
                 Ok(content) => {
                     if PRODUCT_NAMES.iter().any(|&name| content.contains(name)) {
@@ -83,11 +94,11 @@ impl OpenStack {
 
         debug!(
             "Checking {} vendor file: {}",
-            IDENTIFIER, CHASSIS_ASSET_TAG_FILE
+            IDENTIFIER,
+            chassis_asset_tag_file.as_ref().display(),
         );
-        let chassis_asset_tag_file = Path::new(CHASSIS_ASSET_TAG_FILE);
 
-        if chassis_asset_tag_file.is_file() {
+        if chassis_asset_tag_file.as_ref().is_file() {
             match fs::read_to_string(chassis_asset_tag_file).await {
                 Ok(content) => {
                     if CHASSIS_ASSET_TAGS

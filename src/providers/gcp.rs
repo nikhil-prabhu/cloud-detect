@@ -9,7 +9,8 @@ use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
-const METADATA_URL: &str = "http://metadata.google.internal/computeMetadata/v1/instance/tags";
+const METADATA_URI: &str = "http://metadata.google.internal";
+const METADATA_PATH: &str = "/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
 pub const IDENTIFIER: ProviderId = ProviderId::GCP;
 
@@ -25,7 +26,9 @@ impl Provider for GCP {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Google Cloud Platform");
-        if self.check_vendor_file().await || self.check_metadata_server().await {
+        if self.check_vendor_file(VENDOR_FILE).await
+            || self.check_metadata_server(METADATA_URI).await
+        {
             info!("Identified Google Cloud Platform");
             let res = tx.send(IDENTIFIER).await;
 
@@ -39,24 +42,26 @@ impl Provider for GCP {
 impl GCP {
     /// Tries to identify GCP via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self) -> bool {
-        debug!(
-            "Checking {} metadata using url: {}",
-            IDENTIFIER, METADATA_URL
-        );
+    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
+
         let client = reqwest::Client::new();
-        let req = client.get(METADATA_URL).header("Metadata-Flavor", "Google");
+        let req = client.get(url).header("Metadata-Flavor", "Google");
 
         req.send().await.is_ok()
     }
 
     /// Tries to identify GCP using vendor file(s).
     #[instrument(skip_all)]
-    async fn check_vendor_file(&self) -> bool {
-        debug!("Checking {} vendor file: {}", IDENTIFIER, VENDOR_FILE);
-        let vendor_file = Path::new(VENDOR_FILE);
+    async fn check_vendor_file<P: AsRef<Path>>(&self, vendor_file: P) -> bool {
+        debug!(
+            "Checking {} vendor file: {}",
+            IDENTIFIER,
+            vendor_file.as_ref().display()
+        );
 
-        if vendor_file.is_file() {
+        if vendor_file.as_ref().is_file() {
             return match fs::read_to_string(vendor_file).await {
                 Ok(content) => content.contains("Google"),
                 Err(err) => {

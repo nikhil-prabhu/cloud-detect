@@ -10,7 +10,8 @@ use tracing::{debug, error, info, instrument};
 
 use crate::{Provider, ProviderId};
 
-const METADATA_URL: &str = "http://169.254.169.254/v1.json";
+const METADATA_URI: &str = "http://169.254.169.254";
+const METADATA_PATH: &str = "/v1.json";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
 pub const IDENTIFIER: ProviderId = ProviderId::Vultr;
 
@@ -32,7 +33,9 @@ impl Provider for Vultr {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Vultr");
-        if self.check_vendor_file().await || self.check_metadata_server().await {
+        if self.check_vendor_file(VENDOR_FILE).await
+            || self.check_metadata_server(METADATA_URI).await
+        {
             info!("Identified Vultr");
             let res = tx.send(IDENTIFIER).await;
 
@@ -46,12 +49,11 @@ impl Provider for Vultr {
 impl Vultr {
     /// Tries to identify Vultr via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self) -> bool {
-        debug!(
-            "Checking {} metadata using url: {}",
-            IDENTIFIER, METADATA_URL
-        );
-        match reqwest::get(METADATA_URL).await {
+    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
+
+        match reqwest::get(url).await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
                 Ok(resp) => resp.instance_id.len() > 0,
                 Err(err) => {
@@ -68,11 +70,14 @@ impl Vultr {
 
     /// Tries to identify Vultr using vendor file(s).
     #[instrument(skip_all)]
-    async fn check_vendor_file(&self) -> bool {
-        debug!("Checking {} vendor file: {}", IDENTIFIER, VENDOR_FILE);
-        let vendor_file = Path::new(VENDOR_FILE);
+    async fn check_vendor_file<P: AsRef<Path>>(&self, vendor_file: P) -> bool {
+        debug!(
+            "Checking {} vendor file: {}",
+            IDENTIFIER,
+            vendor_file.as_ref().display()
+        );
 
-        if vendor_file.is_file() {
+        if vendor_file.as_ref().is_file() {
             return match fs::read_to_string(vendor_file).await {
                 Ok(content) => content.contains("Vultr"),
                 Err(err) => {

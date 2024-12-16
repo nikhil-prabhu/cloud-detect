@@ -8,6 +8,7 @@
 //!
 //! ```toml
 //! [dependencies]
+//! # ...
 //! cloud_detect = "1.1.0"
 //! tokio = { version = "1", features = ["full"] }
 //! tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging
@@ -22,10 +23,10 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!    tracing_subscriber::fmt::init(); // Optional; for logging
+//!     tracing_subscriber::fmt::init(); // Optional; for logging
 //!
-//!    let provider = detect(None).await;
-//!    println!("Detected provider: {}", provider);
+//!     let provider = detect(None).await;
+//!     println!("Detected provider: {}", provider);
 //! }
 //! ```
 //!
@@ -36,10 +37,10 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!   tracing_subscriber::fmt::init(); // Optional; for logging
+//!     tracing_subscriber::fmt::init(); // Optional; for logging
 //!
-//!   let provider = detect(Some(10)).await;
-//!   println!("Detected provider: {}", provider);
+//!     let provider = detect(Some(10)).await;
+//!     println!("Detected provider: {}", provider);
 //! }
 //! ```
 
@@ -156,8 +157,8 @@ pub fn supported_providers() -> Vec<String> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///    let provider = detect(None).await;
-///    println!("Detected provider: {}", provider);
+///     let provider = detect(None).await;
+///     println!("Detected provider: {}", provider);
 /// }
 /// ```
 ///
@@ -168,8 +169,8 @@ pub fn supported_providers() -> Vec<String> {
 ///
 /// #[tokio::main]
 /// async fn main() {
-///   let provider = detect(Some(10)).await;
-///   println!("Detected provider: {}", provider);
+///     let provider = detect(Some(10)).await;
+///     println!("Detected provider: {}", provider);
 /// }
 /// ```
 #[instrument]
@@ -248,7 +249,7 @@ mod tests {
     // FIXME: This test will fail on actual cloud instances.
     #[tokio::test]
     async fn test_detect() {
-        let provider = detect(None).await;
+        let provider = detect(Some(1)).await;
         assert_eq!(provider, Default::default());
     }
 }
