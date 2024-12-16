@@ -20,7 +20,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Run tests
-        run: cargo test --locked --all-features --workspace
+        run: cargo test --all-features --workspace
 
   rustfmt:
     name: Rustfmt
