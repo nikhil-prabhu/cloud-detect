@@ -13,10 +13,8 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
 const METADATA_TOKEN_PATH: &str = "/latest/api/token";
-const VENDOR_FILES: [&str; 2] = [
-    "/sys/class/dmi/id/product_version",
-    "/sys/class/dmi/id/bios_vendor",
-];
+const PRODUCT_VERSION_FILE: &str = "/sys/class/dmi/product_version";
+const BIOS_VENDOR_FILE: &str = "/sys/class/dmi/id/bios_vendor";
 pub const IDENTIFIER: ProviderId = ProviderId::AWS;
 
 #[derive(Serialize, Deserialize)]
@@ -39,7 +37,8 @@ impl Provider for Aws {
     #[instrument(skip_all)]
     async fn identify(&self, tx: Sender<ProviderId>) {
         info!("Checking Amazon Web Services");
-        if self.check_vendor_files(VENDOR_FILES).await
+        if self.check_product_version_file(PRODUCT_VERSION_FILE).await
+            || self.check_bios_vendor_file(BIOS_VENDOR_FILE).await
             || self.check_metadata_server_imdsv2(METADATA_URI).await
             || self.check_metadata_server_imdsv1(METADATA_URI).await
         {
@@ -134,29 +133,45 @@ impl Aws {
         }
     }
 
-    /// Tries to identify AWS using vendor file(s).
+    /// Tries to identify AWS using the product version file.
     #[instrument(skip_all)]
-    async fn check_vendor_files<I>(&self, vendor_files: I) -> bool
-    where
-        I: IntoIterator,
-        I::Item: AsRef<Path>,
-    {
-        for vendor_file in vendor_files {
-            debug!(
-                "Checking {} vendor file: {}",
-                IDENTIFIER,
-                vendor_file.as_ref().display()
-            );
+    async fn check_product_version_file<P: AsRef<Path>>(&self, product_version_file: P) -> bool {
+        debug!(
+            "Checking {} product version file: {}",
+            IDENTIFIER,
+            product_version_file.as_ref().display()
+        );
 
-            if vendor_file.as_ref().is_file() {
-                return match fs::read_to_string(vendor_file).await {
-                    Ok(content) => content.to_lowercase().contains("amazon"),
-                    Err(err) => {
-                        error!("Error reading file: {:?}", err);
-                        false
-                    }
-                };
-            }
+        if product_version_file.as_ref().is_file() {
+            return match fs::read_to_string(product_version_file).await {
+                Ok(content) => content.to_lowercase().contains("amazon"),
+                Err(err) => {
+                    error!("Error reading file: {:?}", err);
+                    false
+                }
+            };
+        }
+
+        false
+    }
+
+    /// Tries to identify AWS using the BIOS vendor file.
+    #[instrument(skip_all)]
+    async fn check_bios_vendor_file<P: AsRef<Path>>(&self, bios_vendor_file: P) -> bool {
+        debug!(
+            "Checking {} BIOS vendor file: {}",
+            IDENTIFIER,
+            bios_vendor_file.as_ref().display()
+        );
+
+        if bios_vendor_file.as_ref().is_file() {
+            return match fs::read_to_string(bios_vendor_file).await {
+                Ok(content) => content.to_lowercase().contains("amazon"),
+                Err(err) => {
+                    error!("Error reading file: {:?}", err);
+                    false
+                }
+            };
         }
 
         false
@@ -266,16 +281,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_check_vendor_file_success() -> Result<()> {
+    async fn test_check_product_version_file_success() -> Result<()> {
         let mut product_version_file = NamedTempFile::new()?;
-        let mut bios_vendor_file = NamedTempFile::new()?;
-
         product_version_file.write_all("amazon".as_bytes())?;
-        bios_vendor_file.write_all("amazon".as_bytes())?;
 
         let provider = Aws;
         let result = provider
-            .check_vendor_files(vec![product_version_file.path(), bios_vendor_file.path()])
+            .check_product_version_file(product_version_file.path())
             .await;
 
         assert!(result);
@@ -284,13 +296,41 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_check_vendor_file_failure() -> Result<()> {
+    async fn test_check_product_version_file_failure() -> Result<()> {
         let product_version_file = NamedTempFile::new()?;
+
+        let provider = Aws;
+        let result = provider
+            .check_product_version_file(product_version_file.path())
+            .await;
+
+        assert!(!result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_bios_vendor_file_success() -> Result<()> {
+        let mut bios_vendor_file = NamedTempFile::new()?;
+        bios_vendor_file.write_all("amazon".as_bytes())?;
+
+        let provider = Aws;
+        let result = provider
+            .check_bios_vendor_file(bios_vendor_file.path())
+            .await;
+
+        assert!(result);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_check_bios_vendor_file_failure() -> Result<()> {
         let bios_vendor_file = NamedTempFile::new()?;
 
         let provider = Aws;
         let result = provider
-            .check_vendor_files(vec![product_version_file.path(), bios_vendor_file.path()])
+            .check_bios_vendor_file(bios_vendor_file.path())
             .await;
 
         assert!(!result);
