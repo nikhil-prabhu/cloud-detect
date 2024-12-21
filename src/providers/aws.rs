@@ -41,11 +41,11 @@ impl Provider for Aws {
         if self.check_product_version_file(PRODUCT_VERSION_FILE).await
             || self.check_bios_vendor_file(BIOS_VENDOR_FILE).await
             || self
-            .check_metadata_server_imdsv2(METADATA_URI, timeout)
-            .await
+                .check_metadata_server_imdsv2(METADATA_URI, timeout)
+                .await
             || self
-            .check_metadata_server_imdsv1(METADATA_URI, timeout)
-            .await
+                .check_metadata_server_imdsv1(METADATA_URI, timeout)
+                .await
         {
             info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
