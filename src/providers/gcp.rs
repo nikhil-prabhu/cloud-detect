@@ -1,6 +1,7 @@
 //! Google Cloud Platform (GCP).
 
 use std::path::Path;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::fs;
@@ -24,10 +25,10 @@ impl Provider for Gcp {
 
     /// Tries to identify GCP using all the implemented options.
     #[instrument(skip_all)]
-    async fn identify(&self, tx: Sender<ProviderId>) {
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
         info!("Checking Google Cloud Platform");
         if self.check_vendor_file(VENDOR_FILE).await
-            || self.check_metadata_server(METADATA_URI).await
+            || self.check_metadata_server(METADATA_URI, timeout).await
         {
             info!("Identified Google Cloud Platform");
             let res = tx.send(IDENTIFIER).await;
@@ -42,11 +43,17 @@ impl Provider for Gcp {
 impl Gcp {
     /// Tries to identify GCP via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
-        let client = reqwest::Client::new();
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
+
         let req = client.get(url).header("Metadata-Flavor", "Google");
         let resp = req.send().await;
 
@@ -104,7 +111,9 @@ mod tests {
 
         let provider = Gcp;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -120,7 +129,9 @@ mod tests {
 
         let provider = Gcp;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }

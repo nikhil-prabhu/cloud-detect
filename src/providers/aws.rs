@@ -1,6 +1,7 @@
 //! Amazon Web Services (AWS).
 
 use std::path::Path;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -35,12 +36,16 @@ impl Provider for Aws {
 
     /// Tries to identify AWS using all the implemented options.
     #[instrument(skip_all)]
-    async fn identify(&self, tx: Sender<ProviderId>) {
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
         info!("Checking Amazon Web Services");
         if self.check_product_version_file(PRODUCT_VERSION_FILE).await
             || self.check_bios_vendor_file(BIOS_VENDOR_FILE).await
-            || self.check_metadata_server_imdsv2(METADATA_URI).await
-            || self.check_metadata_server_imdsv1(METADATA_URI).await
+            || self
+                .check_metadata_server_imdsv2(METADATA_URI, timeout)
+                .await
+            || self
+                .check_metadata_server_imdsv1(METADATA_URI, timeout)
+                .await
         {
             info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
@@ -55,11 +60,16 @@ impl Provider for Aws {
 impl Aws {
     /// Tries to identify AWS via metadata server (using IMDSv2).
     #[instrument(skip_all)]
-    async fn check_metadata_server_imdsv2(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server_imdsv2(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let token_url = format!("{}{}", metadata_uri, METADATA_TOKEN_PATH);
         debug!("Retrieving {} IMDSv2 token from: {}", IDENTIFIER, token_url);
 
-        let client = reqwest::Client::new();
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
 
         let token = match client
             .get(token_url)
@@ -114,11 +124,18 @@ impl Aws {
 
     /// Tries to identify AWS via metadata server (using IMDSv1).
     #[instrument(skip_all)]
-    async fn check_metadata_server_imdsv1(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server_imdsv1(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
-        match reqwest::get(url).await {
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
+
+        match client.get(url).send().await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
                 Ok(resp) => resp.image_id.starts_with("ami-") && resp.instance_id.starts_with("i-"),
                 Err(err) => {
@@ -211,7 +228,9 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server_imdsv2(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server_imdsv2(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -237,7 +256,9 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server_imdsv2(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server_imdsv2(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }
@@ -256,7 +277,9 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server_imdsv1(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server_imdsv1(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -275,7 +298,9 @@ mod tests {
 
         let provider = Aws;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server_imdsv1(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server_imdsv1(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }

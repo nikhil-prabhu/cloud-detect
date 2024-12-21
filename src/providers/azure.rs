@@ -1,6 +1,7 @@
 //! Microsoft Azure.
 
 use std::path::Path;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -36,10 +37,10 @@ impl Provider for Azure {
 
     /// Tries to identify Azure using all the implemented options.
     #[instrument(skip_all)]
-    async fn identify(&self, tx: Sender<ProviderId>) {
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
         info!("Checking Microsoft Azure");
         if self.check_vendor_file(VENDOR_FILE).await
-            || self.check_metadata_server(METADATA_URI).await
+            || self.check_metadata_server(METADATA_URI, timeout).await
         {
             info!("Identified Microsoft Azure");
             let res = tx.send(IDENTIFIER).await;
@@ -54,11 +55,16 @@ impl Provider for Azure {
 impl Azure {
     /// Tries to identify Azure via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
-        let client = reqwest::Client::new();
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
         let req = client.get(url).header("Metadata", "true");
 
         match req.send().await {
@@ -125,7 +131,9 @@ mod tests {
 
         let provider = Azure;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -145,7 +153,9 @@ mod tests {
 
         let provider = Azure;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }

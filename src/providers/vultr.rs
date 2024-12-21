@@ -1,6 +1,7 @@
 //! Vultr.
 
 use std::path::Path;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -31,10 +32,10 @@ impl Provider for Vultr {
 
     /// Tries to identify Vultr using all the implemented options.
     #[instrument(skip_all)]
-    async fn identify(&self, tx: Sender<ProviderId>) {
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
         info!("Checking Vultr");
         if self.check_vendor_file(VENDOR_FILE).await
-            || self.check_metadata_server(METADATA_URI).await
+            || self.check_metadata_server(METADATA_URI, timeout).await
         {
             info!("Identified Vultr");
             let res = tx.send(IDENTIFIER).await;
@@ -49,11 +50,18 @@ impl Provider for Vultr {
 impl Vultr {
     /// Tries to identify Vultr via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
-        match reqwest::get(url).await {
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
+
+        match client.get(url).send().await {
             Ok(resp) => match resp.json::<MetadataResponse>().await {
                 Ok(resp) => !resp.instance_id.is_empty(),
                 Err(err) => {
@@ -115,7 +123,9 @@ mod tests {
 
         let provider = Vultr;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -133,7 +143,9 @@ mod tests {
 
         let provider = Vultr;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }

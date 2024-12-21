@@ -1,6 +1,7 @@
 //! Alibaba Cloud.
 
 use std::path::Path;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::fs;
@@ -24,10 +25,10 @@ impl Provider for Alibaba {
 
     /// Tries to identify Alibaba Cloud using all the implemented options.
     #[instrument(skip_all)]
-    async fn identify(&self, tx: Sender<ProviderId>) {
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
         info!("Checking Alibaba Cloud");
         if self.check_vendor_file(VENDOR_FILE).await
-            || self.check_metadata_server(METADATA_URI).await
+            || self.check_metadata_server(METADATA_URI, timeout).await
         {
             info!("Identified Alibaba Cloud");
             let res = tx.send(IDENTIFIER).await;
@@ -42,11 +43,18 @@ impl Provider for Alibaba {
 impl Alibaba {
     /// Tries to identify Alibaba via metadata server.
     #[instrument(skip_all)]
-    async fn check_metadata_server(&self, metadata_uri: &str) -> bool {
+    async fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
-        match reqwest::get(url).await {
+        let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
+            client
+        } else {
+            error!("Error creating client");
+            return false;
+        };
+
+        match client.get(url).send().await {
             Ok(resp) => match resp.text().await {
                 Ok(text) => text.contains("ECS Virt"),
                 Err(err) => {
@@ -106,7 +114,9 @@ mod tests {
 
         let provider = Alibaba;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(result);
     }
@@ -122,7 +132,9 @@ mod tests {
 
         let provider = Alibaba;
         let metadata_uri = mock_server.uri();
-        let result = provider.check_metadata_server(&metadata_uri).await;
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
 
         assert!(!result);
     }

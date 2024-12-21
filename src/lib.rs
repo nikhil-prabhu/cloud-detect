@@ -100,7 +100,7 @@ pub enum ProviderId {
 #[async_trait]
 pub(crate) trait Provider: Send + Sync {
     fn identifier(&self) -> ProviderId;
-    async fn identify(&self, tx: Sender<ProviderId>);
+    async fn identify(&self, tx: Sender<ProviderId>, timeout: Duration);
 }
 
 type P = Arc<dyn Provider>;
@@ -196,7 +196,7 @@ pub async fn detect(timeout: Option<u64>) -> ProviderId {
 
         handles.push(tokio::spawn(async move {
             debug!("Spawning task for provider: {}", provider.identifier());
-            provider.identify(tx).await;
+            provider.identify(tx, timeout).await;
 
             // Decrement counter and notify if we're the last task
             if counter.fetch_sub(1, Ordering::SeqCst) == 1 {
