@@ -57,6 +57,8 @@ use tracing::{debug, instrument};
 
 use crate::providers::*;
 
+#[cfg(feature = "blocking")]
+pub mod blocking;
 pub(crate) mod providers;
 
 /// Maximum time allowed for detection.
