@@ -23,6 +23,7 @@ anyhow = "1.0.94"
 tempfile = "3.14.0"
 tracing-subscriber = "0.3.19"
 wiremock = "0.6.2"
+mockito = "1.6.1"
 
 [features]
 default = []
