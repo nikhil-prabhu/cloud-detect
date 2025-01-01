@@ -63,7 +63,7 @@ impl Aws {
         let client = if let Ok(client) = Client::builder().timeout(timeout).build() {
             client
         } else {
-            tracing::error!("Error creating client");
+            error!("Error creating client");
             return false;
         };
 
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_check_product_version_file_success() -> Result<()> {
-        let mut product_version_file = NamedTempFile::new().unwrap();
+        let mut product_version_file = NamedTempFile::new()?;
         product_version_file.write_all("amazon".as_bytes())?;
 
         let provider = Aws;
