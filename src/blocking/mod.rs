@@ -18,8 +18,12 @@ pub(crate) trait Provider: Send + Sync {
 
 type P = Arc<dyn Provider>;
 
-static PROVIDERS: LazyLock<Mutex<Vec<P>>> =
-    LazyLock::new(|| Mutex::new(vec![Arc::new(alibaba::Alibaba) as P]));
+static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
+    Mutex::new(vec![
+        Arc::new(alibaba::Alibaba) as P,
+        Arc::new(aws::Aws) as P,
+    ])
+});
 
 /// Returns a list of currently supported providers.
 ///
