@@ -14,7 +14,7 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
 const METADATA_TOKEN_PATH: &str = "/latest/api/token";
-const PRODUCT_VERSION_FILE: &str = "/sys/class/dmi/product_version";
+const PRODUCT_VERSION_FILE: &str = "/sys/class/dmi/id/product_version";
 const BIOS_VENDOR_FILE: &str = "/sys/class/dmi/id/bios_vendor";
 pub const IDENTIFIER: ProviderId = ProviderId::AWS;
 
@@ -41,11 +41,11 @@ impl Provider for Aws {
         if self.check_product_version_file(PRODUCT_VERSION_FILE).await
             || self.check_bios_vendor_file(BIOS_VENDOR_FILE).await
             || self
-                .check_metadata_server_imdsv2(METADATA_URI, timeout)
-                .await
+            .check_metadata_server_imdsv2(METADATA_URI, timeout)
+            .await
             || self
-                .check_metadata_server_imdsv1(METADATA_URI, timeout)
-                .await
+            .check_metadata_server_imdsv1(METADATA_URI, timeout)
+            .await
         {
             info!("Identified Amazon Web Services");
             let res = tx.send(IDENTIFIER).await;
