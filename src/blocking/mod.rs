@@ -25,6 +25,7 @@ static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
         Arc::new(aws::Aws) as P,
         Arc::new(azure::Azure) as P,
         Arc::new(digitalocean::DigitalOcean) as P,
+        Arc::new(gcp::Gcp) as P,
     ])
 });
 
