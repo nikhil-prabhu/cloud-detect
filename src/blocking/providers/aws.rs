@@ -1,7 +1,7 @@
 //! Amazon Web Services (AWS).
 
 use std::path::Path;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
@@ -33,7 +33,7 @@ impl Provider for Aws {
         IDENTIFIER
     }
 
-    fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
+    fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Amazon Web Services");
         if self.check_product_version_file(PRODUCT_VERSION_FILE)
             || self.check_bios_vendor_file(BIOS_VENDOR_FILE)

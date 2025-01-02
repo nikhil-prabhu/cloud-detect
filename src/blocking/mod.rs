@@ -1,6 +1,6 @@
 pub(crate) mod providers;
 
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 use std::sync::{mpsc, Arc, LazyLock, Mutex};
 use std::time::Duration;
 
@@ -13,7 +13,7 @@ use crate::{ProviderId, DEFAULT_DETECTION_TIMEOUT};
 #[allow(dead_code)]
 pub(crate) trait Provider: Send + Sync {
     fn identifier(&self) -> ProviderId;
-    fn identify(&self, tx: Sender<ProviderId>, timeout: Duration);
+    fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration);
 }
 
 type P = Arc<dyn Provider>;
@@ -51,7 +51,7 @@ pub fn supported_providers() -> Result<Vec<String>> {
 
 pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
     let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
-    let (tx, rx) = mpsc::channel::<ProviderId>();
+    let (tx, rx) = mpsc::sync_channel::<ProviderId>(1);
     let guard = PROVIDERS
         .lock()
         .map_err(|_| anyhow::anyhow!("Error locking providers"))?;

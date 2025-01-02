@@ -2,7 +2,7 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 use std::time::Duration;
 
 use tracing::{debug, error, info, instrument};
@@ -23,7 +23,7 @@ impl Provider for Alibaba {
     }
 
     #[instrument(skip_all)]
-    fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
+    fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Alibaba Cloud");
         if self.check_vendor_file(VENDOR_FILE) || self.check_metadata_server(METADATA_URI, timeout)
         {

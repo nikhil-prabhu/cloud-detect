@@ -2,7 +2,7 @@
 
 use std::fs;
 use std::path::Path;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::SyncSender;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
@@ -12,13 +12,9 @@ use tracing::{debug, error, info, instrument};
 use crate::blocking::Provider;
 use crate::ProviderId;
 
-#[allow(unused)]
 const METADATA_URI: &str = "http://169.254.169.254";
-#[allow(unused)]
 const METADATA_PATH: &str = "/metadata/instance?api-version=2017-12-01";
-#[allow(unused)]
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
-#[allow(unused)]
 const IDENTIFIER: ProviderId = ProviderId::Azure;
 
 #[derive(Serialize, Deserialize)]
@@ -40,7 +36,7 @@ impl Provider for Azure {
     }
 
     #[instrument(skip_all)]
-    fn identify(&self, tx: Sender<ProviderId>, timeout: Duration) {
+    fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Microsoft Azure");
         if self.check_vendor_file(VENDOR_FILE) || self.check_metadata_server(METADATA_URI, timeout)
         {
