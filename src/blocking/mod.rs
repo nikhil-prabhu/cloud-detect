@@ -1,5 +1,6 @@
 pub(crate) mod providers;
 
+use std::sync::mpsc::RecvTimeoutError;
 use std::sync::mpsc::SyncSender;
 use std::sync::{mpsc, Arc, LazyLock, Mutex};
 use std::time::Duration;
@@ -66,9 +67,11 @@ pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
         handles.push(handle);
     }
 
-    if let Ok(provider_id) = rx.recv_timeout(timeout) {
-        return Ok(provider_id);
+    match rx.recv_timeout(timeout) {
+        Ok(provider_id) => Ok(provider_id),
+        Err(err) => match err {
+            RecvTimeoutError::Timeout => Ok(ProviderId::Unknown),
+            RecvTimeoutError::Disconnected => Err(anyhow::anyhow!("Error receiving message")),
+        },
     }
-
-    Ok(ProviderId::Unknown)
 }
