@@ -11,17 +11,11 @@ use tracing::{debug, error, info, instrument};
 use crate::blocking::Provider;
 use crate::ProviderId;
 
-#[allow(unused)]
 const METADATA_URI: &str = "http://169.254.169.254";
-#[allow(unused)]
 const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
-#[allow(unused)]
 const METADATA_TOKEN_PATH: &str = "/latest/api/token";
-#[allow(unused)]
 const PRODUCT_VERSION_FILE: &str = "/sys/class/dmi/id/product_version";
-#[allow(unused)]
 const BIOS_VENDOR_FILE: &str = "/sys/class/dmi/id/bios_vendor";
-#[allow(unused)]
 const IDENTIFIER: ProviderId = ProviderId::AWS;
 
 #[derive(Serialize, Deserialize)]

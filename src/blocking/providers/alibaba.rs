@@ -10,13 +10,9 @@ use tracing::{debug, error, info, instrument};
 use crate::blocking::Provider;
 use crate::ProviderId;
 
-#[allow(unused)]
 const METADATA_URI: &str = "http://100.100.100.200";
-#[allow(unused)]
 const METADATA_PATH: &str = "/latest/meta-data/latest/meta-data/instance/virtualization-solution";
-#[allow(unused)]
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-#[allow(unused)]
 const IDENTIFIER: ProviderId = ProviderId::Alibaba;
 
 pub(crate) struct Alibaba;

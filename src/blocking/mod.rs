@@ -1,13 +1,13 @@
 pub(crate) mod providers;
 
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{mpsc, Arc, LazyLock, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
 
 use crate::blocking::providers::*;
-use crate::ProviderId;
+use crate::{ProviderId, DEFAULT_DETECTION_TIMEOUT};
 
 /// Represents a cloud service provider.
 #[allow(dead_code)]
@@ -49,7 +49,26 @@ pub fn supported_providers() -> Result<Vec<String>> {
     Ok(providers)
 }
 
-#[allow(unused_variables)]
 pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
-    todo!()
+    let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
+    let (tx, rx) = mpsc::channel::<ProviderId>();
+    let guard = PROVIDERS
+        .lock()
+        .map_err(|_| anyhow::anyhow!("Error locking providers"))?;
+    let provider_entries: Vec<P> = guard.iter().cloned().collect();
+    let providers_count = provider_entries.len();
+    let mut handles = Vec::with_capacity(providers_count);
+
+    for provider in provider_entries {
+        let tx = tx.clone();
+        let handle = std::thread::spawn(move || provider.identify(tx, timeout));
+
+        handles.push(handle);
+    }
+
+    if let Ok(provider_id) = rx.recv_timeout(timeout) {
+        return Ok(provider_id);
+    }
+
+    Ok(ProviderId::Unknown)
 }
