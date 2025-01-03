@@ -17,7 +17,7 @@
 //! ```toml
 //! # ...
 //! cloud_detect = { version = "2", features = ["blocking"] }
-//! tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging
+//! tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging
 //! ```
 //!
 //! ## Examples

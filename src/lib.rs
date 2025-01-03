@@ -11,7 +11,7 @@
 //! # ...
 //! cloud_detect = "2"
 //! tokio = { version = "1", features = ["full"] }
-//! tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging
+//! tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging
 //! ```
 //!
 //! ## Examples

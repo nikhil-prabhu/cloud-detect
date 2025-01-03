@@ -37,7 +37,7 @@ First, add the library to your project by adding the following to your `Cargo.to
 # ...
 cloud-detect = "2"
 tokio = { version = "1", features = ["full"] }
-tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging.
+tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging.
 ```
 
 To use the non-async blocking API instead, enable the `blocking` feature:
@@ -46,7 +46,7 @@ To use the non-async blocking API instead, enable the `blocking` feature:
 [dependencies]
 # ...
 cloud-detect = { version = "2", features = ["blocking"] }
-tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging.
+tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging.
 ```
 
 Detect the cloud provider and print the result (with default timeout; async).
