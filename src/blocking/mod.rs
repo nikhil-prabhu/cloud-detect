@@ -90,14 +90,10 @@ pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
         .lock()
         .map_err(|_| anyhow::anyhow!("Error locking providers"))?;
     let provider_entries: Vec<P> = guard.iter().cloned().collect();
-    let providers_count = provider_entries.len();
-    let mut handles = Vec::with_capacity(providers_count);
 
     for provider in provider_entries {
         let tx = tx.clone();
-        let handle = std::thread::spawn(move || provider.identify(tx, timeout));
-
-        handles.push(handle);
+        std::thread::spawn(move || provider.identify(tx, timeout));
     }
 
     match rx.recv_timeout(timeout) {
