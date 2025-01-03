@@ -7,3 +7,4 @@ pub(crate) mod digitalocean;
 pub(crate) mod gcp;
 pub(crate) mod oci;
 pub(crate) mod openstack;
+pub(crate) mod vultr;
