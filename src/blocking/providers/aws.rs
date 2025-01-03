@@ -150,7 +150,7 @@ impl Aws {
 
         if product_version_file.as_ref().is_file() {
             return match std::fs::read_to_string(product_version_file) {
-                Ok(content) => content.contains("amazon"),
+                Ok(content) => content.to_lowercase().contains("amazon"),
                 Err(err) => {
                     error!("Error reading file: {:?}", err);
                     false
@@ -171,7 +171,7 @@ impl Aws {
 
         if bios_vendor_file.as_ref().is_file() {
             return match std::fs::read_to_string(bios_vendor_file) {
-                Ok(content) => content.contains("amazon"),
+                Ok(content) => content.to_lowercase().contains("amazon"),
                 Err(err) => {
                     error!("Error reading file: {:?}", err);
                     false
