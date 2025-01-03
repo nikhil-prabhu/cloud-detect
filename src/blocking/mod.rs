@@ -1,3 +1,49 @@
+//! Blocking API for cloud provider detection.
+//!
+//! This module provides a blocking API for detecting the host's cloud provider. It is built on top of the asynchronous API
+//! and executes the blocking provider identification within threads.
+//!
+//! This module is intended for use in synchronous applications or in situations where the asynchronous API is not suitable.
+//! While not guaranteed, the performance of this module should be comparable to the asynchronous API.
+//!
+//! ## Optional
+//!
+//! This requires the `blocking` feature to be enabled.
+//!
+//! ## Usage
+//!
+//! Add the following to your `Cargo.toml`:
+//!
+//! ```toml
+//! # ...
+//! cloud_detect = { version = "2", features = ["blocking"] }
+//! tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging
+//! ```
+//!
+//! ## Examples
+//!
+//! Detect the cloud provider and print the result (with default timeout).
+//!
+//! ```rust
+//! use cloud_detect::blocking::detect;
+//!
+//! tracing_subscriber::fmt::init(); // Optional; for logging
+//!
+//! let provider = detect(None).unwrap();
+//! println!("Detected provider: {:?}", provider);
+//! ```
+//!
+//! Detect the cloud provider and print the result (with custom timeout).
+//!
+//! ```rust
+//! use cloud_detect::blocking::detect;
+//!
+//! tracing_subscriber::fmt::init(); // Optional; for logging
+//!
+//! let provider = detect(Some(10)).unwrap();
+//! println!("Detected provider: {:?}", provider);
+//! ```
+
 pub(crate) mod providers;
 
 use std::sync::mpsc::RecvTimeoutError;
