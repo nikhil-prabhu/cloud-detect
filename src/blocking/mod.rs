@@ -55,6 +55,34 @@ pub fn supported_providers() -> Result<Vec<String>> {
     Ok(providers)
 }
 
+/// Detects the host's cloud provider.
+///
+/// Returns [ProviderId::Unknown] if the detection failed or timed out. If the detection was successful, it returns
+/// a value from [ProviderId](enum.ProviderId.html).
+///
+/// # Arguments
+///
+/// * `timeout` - Maximum time (seconds) allowed for detection. Defaults to [DEFAULT_DETECTION_TIMEOUT](constant.DEFAULT_DETECTION_TIMEOUT.html) if `None`.
+///
+/// # Examples
+///
+/// Detect the cloud provider and print the result (with default timeout).
+///
+/// ```
+/// use cloud_detect::blocking::detect;
+///
+/// let provider = detect(None).unwrap();
+/// println!("Detected provider: {:?}", provider);
+/// ```
+///
+/// Detect the cloud provider and print the result (with custom timeout).
+///
+/// ```
+/// use cloud_detect::blocking::detect;
+///
+/// let provider = detect(Some(10)).unwrap();
+/// println!("Detected provider: {:?}", provider);
+/// ```
 pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
     let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
     let (tx, rx) = mpsc::sync_channel::<ProviderId>(1);
