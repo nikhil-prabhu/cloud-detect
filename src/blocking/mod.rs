@@ -150,3 +150,26 @@ pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+
+    use super::*;
+
+    #[test]
+    fn test_supported_providers() -> Result<()> {
+        let providers = supported_providers()?;
+        assert_eq!(providers.len(), 8);
+        assert!(providers.contains(&crate::providers::alibaba::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::aws::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::azure::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::digitalocean::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::gcp::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::oci::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::openstack::IDENTIFIER.to_string()));
+        assert!(providers.contains(&crate::providers::vultr::IDENTIFIER.to_string()));
+
+        Ok(())
+    }
+}
