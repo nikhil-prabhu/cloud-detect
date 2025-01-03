@@ -37,10 +37,19 @@ First, add the library to your project by adding the following to your `Cargo.to
 # ...
 cloud-detect = "2"
 tokio = { version = "1", features = ["full"] }
-tracing-subscriber = { version = "0.2", features = ["env-filter"] }# Optional; for logging.
+tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging.
 ```
 
-Detect the cloud provider and print the result (with default timeout).
+To use the non-async blocking API instead, enable the `blocking` feature:
+
+```toml
+[dependencies]
+# ...
+cloud-detect = { version = "2", features = ["blocking"] }
+tracing-subscriber = { version = "0.2", features = ["env-filter"] } # Optional; for logging.
+```
+
+Detect the cloud provider and print the result (with default timeout; async).
 
 ```rust
 use cloud_detect::detect;
@@ -59,7 +68,25 @@ async fn main() {
 }
 ```
 
-Detect the cloud provider and print the result (with custom timeout).
+Detect the cloud provider and print the result (with default timeout; blocking).
+
+```rust
+use cloud_detect::blocking::detect;
+
+fn main() {
+    tracing_subscriber::fmt::init(); // Optional; for logging
+
+    let provider = detect(None).unwrap();
+
+    // When tested on AWS:
+    println!("{}", provider); // "aws"
+
+    // When tested on local/non-supported cloud environment:
+    println!("{}", provider); // "unknown"
+}
+```
+
+Detect the cloud provider and print the result (with custom timeout; async).
 
 ```rust
 use cloud_detect::detect;
@@ -78,14 +105,44 @@ async fn main() {
 }
 ```
 
+Detect the cloud provider and print the result (with custom timeout; blocking).
+
+```rust
+use cloud_detect::blocking::detect;
+
+fn main() {
+    tracing_subscriber::fmt::init(); // Optional; for logging
+
+    let provider = detect(Some(10)).unwrap();
+
+    // When tested on AWS:
+    println!("{}", provider); // "aws"
+
+    // When tested on local/non-supported cloud environment:
+    println!("{}", provider); // "unknown"
+}
+```
+
 You can also check the list of currently supported cloud providers.
+
+Async:
 
 ```rust
 use cloud_detect::supported_providers;
 
 #[tokio::main]
 async fn main() {
-    println!("Supported providers: {:?}", supported_providers.await);
+    println!("Supported providers: {:?}", supported_providers().await);
+}
+```
+
+Blocking:
+
+```rust
+use cloud_detect::blocking::supported_providers;
+
+fn main() {
+    println!("Supported providers: {:?}", supported_providers().unwrap());
 }
 ```
 
