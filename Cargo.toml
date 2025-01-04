@@ -9,6 +9,12 @@ license = "GPL-3.0"
 documentation = "https://docs.rs/cloud-detect"
 keywords = ["cloud", "aws", "azure", "gcp", "hyperscaler"]
 
+[package.metadata.docs.rs]
+all-features = true
+
+[package.metadata.playground]
+features = ["blocking"]
+
 [dependencies]
 anyhow = { version = "1.0.94", optional = true }
 reqwest = { version = "0.12.9", default-features = false, features = ["json", "rustls-tls"] }
