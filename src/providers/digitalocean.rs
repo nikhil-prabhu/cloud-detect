@@ -152,7 +152,7 @@ mod tests {
     #[tokio::test]
     async fn test_check_vendor_file_success() -> Result<()> {
         let mut vendor_file = NamedTempFile::new()?;
-        vendor_file.write_all("DigitalOcean".as_bytes())?;
+        vendor_file.write_all(b"DigitalOcean")?;
 
         let provider = DigitalOcean;
         let result = provider.check_vendor_file(vendor_file.path()).await;

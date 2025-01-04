@@ -142,7 +142,7 @@ mod tests {
     #[tokio::test]
     async fn test_check_vendor_file_success() -> Result<()> {
         let mut vendor_file = NamedTempFile::new()?;
-        vendor_file.write_all("Alibaba Cloud ECS".as_bytes())?;
+        vendor_file.write_all(b"Alibaba Cloud ECS")?;
 
         let provider = Alibaba;
         let result = provider.check_vendor_file(vendor_file.path()).await;

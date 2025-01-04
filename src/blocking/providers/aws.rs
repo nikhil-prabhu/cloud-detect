@@ -287,7 +287,7 @@ mod tests {
     #[test]
     fn test_check_product_version_file_success() -> Result<()> {
         let mut product_version_file = NamedTempFile::new()?;
-        product_version_file.write_all("amazon".as_bytes())?;
+        product_version_file.write_all(b"amazon")?;
 
         let provider = Aws;
         let result = provider.check_product_version_file(product_version_file.path());
@@ -310,7 +310,7 @@ mod tests {
     #[test]
     fn test_check_bios_vendor_file_success() -> Result<()> {
         let mut bios_vendor_file = NamedTempFile::new()?;
-        bios_vendor_file.write_all("amazon".as_bytes())?;
+        bios_vendor_file.write_all(b"amazon")?;
 
         let provider = Aws;
         let result = provider.check_bios_vendor_file(bios_vendor_file.path());

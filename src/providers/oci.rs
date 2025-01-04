@@ -153,7 +153,7 @@ mod tests {
     #[tokio::test]
     async fn test_check_vendor_file_success() -> Result<()> {
         let mut vendor_file = NamedTempFile::new()?;
-        vendor_file.write_all("OracleCloud".as_bytes())?;
+        vendor_file.write_all(b"OracleCloud")?;
 
         let provider = Oci;
         let result = provider.check_vendor_file(vendor_file.path()).await;
