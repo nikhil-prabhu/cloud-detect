@@ -35,6 +35,7 @@ impl Provider for Azure {
         IDENTIFIER
     }
 
+    /// Tries to identify Azure using all the implemented options.
     #[instrument(skip_all)]
     fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Microsoft Azure");
@@ -49,6 +50,7 @@ impl Provider for Azure {
 }
 
 impl Azure {
+    /// Tries to identify Azure via metadata server.
     #[instrument(skip_all)]
     fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
@@ -76,6 +78,7 @@ impl Azure {
         }
     }
 
+    /// Tries to identify Azure using vendor file(s).
     #[instrument(skip_all)]
     fn check_vendor_file<P: AsRef<Path>>(&self, vendor_file: P) -> bool {
         debug!(

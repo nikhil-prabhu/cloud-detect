@@ -33,6 +33,7 @@ impl Provider for Aws {
         IDENTIFIER
     }
 
+    /// Tries to identify AWS using all the implemented options.
     fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Amazon Web Services");
         if self.check_product_version_file(PRODUCT_VERSION_FILE)
@@ -49,6 +50,7 @@ impl Provider for Aws {
 }
 
 impl Aws {
+    /// Tries to identify AWS via metadata server (using IMDSv2).
     #[instrument(skip_all)]
     fn check_metadata_server_imdsv2(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let token_url = format!("{}{}", metadata_uri, METADATA_TOKEN_PATH);
@@ -111,6 +113,7 @@ impl Aws {
         }
     }
 
+    /// Tries to identify AWS via metadata server (using IMDSv1).
     #[instrument(skip_all)]
     fn check_metadata_server_imdsv1(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
@@ -140,6 +143,7 @@ impl Aws {
         }
     }
 
+    /// Tries to identify AWS using the product version file.
     #[instrument(skip_all)]
     fn check_product_version_file<P: AsRef<Path>>(&self, product_version_file: P) -> bool {
         debug!(
@@ -161,6 +165,7 @@ impl Aws {
         false
     }
 
+    /// Tries to identify AWS using the BIOS vendor file.
     #[instrument(skip_all)]
     fn check_bios_vendor_file<P: AsRef<Path>>(&self, bios_vendor_file: P) -> bool {
         debug!(

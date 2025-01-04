@@ -23,6 +23,7 @@ impl Provider for Gcp {
         IDENTIFIER
     }
 
+    /// Tries to identify GCP using all the implemented options.
     #[instrument(skip_all)]
     fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Google Cloud Platform");

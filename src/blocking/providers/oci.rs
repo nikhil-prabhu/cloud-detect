@@ -30,6 +30,7 @@ impl Provider for Oci {
         IDENTIFIER
     }
 
+    /// Tries to identify OCI using all the implemented options.
     #[instrument(skip_all)]
     fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Oracle Cloud Infrastructure");

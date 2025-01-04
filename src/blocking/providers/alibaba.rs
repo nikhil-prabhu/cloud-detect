@@ -22,6 +22,7 @@ impl Provider for Alibaba {
         IDENTIFIER
     }
 
+    /// Tries to identify Alibaba Cloud using all the implemented options.
     #[instrument(skip_all)]
     fn identify(&self, tx: SyncSender<ProviderId>, timeout: Duration) {
         info!("Checking Alibaba Cloud");
@@ -36,6 +37,7 @@ impl Provider for Alibaba {
 }
 
 impl Alibaba {
+    /// Tries to identify Alibaba via metadata server.
     #[instrument(skip_all)]
     fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
         let url = format!("{}{}", metadata_uri, METADATA_PATH);
@@ -66,6 +68,7 @@ impl Alibaba {
         }
     }
 
+    /// Tries to identify Alibaba using vendor file(s).
     #[instrument(skip_all)]
     fn check_vendor_file<P: AsRef<Path>>(&self, vendor_file: P) -> bool {
         debug!(
