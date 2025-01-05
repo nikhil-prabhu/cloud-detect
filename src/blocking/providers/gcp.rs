@@ -14,7 +14,7 @@ use crate::ProviderId;
 const METADATA_URI: &str = "http://metadata.google.internal";
 const METADATA_PATH: &str = "/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-const IDENTIFIER: ProviderId = ProviderId::GCP;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::GCP;
 
 pub struct Gcp;
 

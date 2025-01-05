@@ -13,9 +13,9 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://metadata.google.internal";
 const METADATA_PATH: &str = "/computeMetadata/v1/instance/tags";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-pub const IDENTIFIER: ProviderId = ProviderId::GCP;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::GCP;
 
-pub struct Gcp;
+pub(crate) struct Gcp;
 
 #[async_trait]
 impl Provider for Gcp {

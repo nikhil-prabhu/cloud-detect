@@ -15,7 +15,7 @@ use crate::ProviderId;
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/metadata/v1.json";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
-const IDENTIFIER: ProviderId = ProviderId::DigitalOcean;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::DigitalOcean;
 
 pub(crate) struct DigitalOcean;
 

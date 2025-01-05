@@ -15,7 +15,7 @@ use crate::ProviderId;
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/metadata/instance?api-version=2017-12-01";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
-const IDENTIFIER: ProviderId = ProviderId::Azure;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::Azure;
 
 #[derive(Serialize, Deserialize)]
 struct Compute {

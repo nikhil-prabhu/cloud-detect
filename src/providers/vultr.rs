@@ -14,9 +14,9 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/v1.json";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/sys_vendor";
-pub const IDENTIFIER: ProviderId = ProviderId::Vultr;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::Vultr;
 
-pub struct Vultr;
+pub(crate) struct Vultr;
 
 #[derive(Serialize, Deserialize)]
 struct MetadataResponse {

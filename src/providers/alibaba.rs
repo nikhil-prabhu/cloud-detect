@@ -13,9 +13,9 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://100.100.100.200";
 const METADATA_PATH: &str = "/latest/meta-data/latest/meta-data/instance/virtualization-solution";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/product_name";
-pub const IDENTIFIER: ProviderId = ProviderId::Alibaba;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::Alibaba;
 
-pub struct Alibaba;
+pub(crate) struct Alibaba;
 
 #[async_trait]
 impl Provider for Alibaba {

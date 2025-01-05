@@ -14,7 +14,7 @@ use crate::{Provider, ProviderId};
 const METADATA_URI: &str = "http://169.254.169.254";
 const METADATA_PATH: &str = "/opc/v1/instance/metadata/";
 const VENDOR_FILE: &str = "/sys/class/dmi/id/chassis_asset_tag";
-pub const IDENTIFIER: ProviderId = ProviderId::OCI;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::OCI;
 
 #[derive(Serialize, Deserialize)]
 struct MetadataResponse {
@@ -22,7 +22,7 @@ struct MetadataResponse {
     oke_tm: String,
 }
 
-pub struct Oci;
+pub(crate) struct Oci;
 
 #[async_trait]
 impl Provider for Oci {

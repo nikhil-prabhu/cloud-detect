@@ -23,7 +23,7 @@ const CHASSIS_ASSET_TAGS: [&str; 5] = [
     "OpenStack Nova",
     "OpenStack Compute",
 ];
-const IDENTIFIER: ProviderId = ProviderId::OpenStack;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::OpenStack;
 
 pub(crate) struct OpenStack;
 

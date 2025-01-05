@@ -16,7 +16,7 @@ const METADATA_PATH: &str = "/latest/dynamic/instance-identity/document";
 const METADATA_TOKEN_PATH: &str = "/latest/api/token";
 const PRODUCT_VERSION_FILE: &str = "/sys/class/dmi/id/product_version";
 const BIOS_VENDOR_FILE: &str = "/sys/class/dmi/id/bios_vendor";
-pub const IDENTIFIER: ProviderId = ProviderId::AWS;
+pub(crate) const IDENTIFIER: ProviderId = ProviderId::AWS;
 
 #[derive(Serialize, Deserialize)]
 struct MetadataResponse {
@@ -26,7 +26,7 @@ struct MetadataResponse {
     instance_id: String,
 }
 
-pub struct Aws;
+pub(crate) struct Aws;
 
 #[async_trait]
 impl Provider for Aws {
