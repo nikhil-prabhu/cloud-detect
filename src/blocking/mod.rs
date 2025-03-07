@@ -67,6 +67,7 @@ type P = Arc<dyn Provider>;
 
 static PROVIDERS: LazyLock<Mutex<Vec<P>>> = LazyLock::new(|| {
     Mutex::new(vec![
+        Arc::new(akamai::Akamai) as P,
         Arc::new(alibaba::Alibaba) as P,
         Arc::new(aws::Aws) as P,
         Arc::new(azure::Azure) as P,
@@ -160,7 +161,8 @@ mod tests {
     #[test]
     fn test_supported_providers() -> Result<()> {
         let providers = supported_providers()?;
-        assert_eq!(providers.len(), 8);
+        assert_eq!(providers.len(), 9);
+        assert!(providers.contains(&akamai::IDENTIFIER.to_string()));
         assert!(providers.contains(&alibaba::IDENTIFIER.to_string()));
         assert!(providers.contains(&aws::IDENTIFIER.to_string()));
         assert!(providers.contains(&azure::IDENTIFIER.to_string()));
