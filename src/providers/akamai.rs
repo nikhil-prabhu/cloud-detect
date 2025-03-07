@@ -1,5 +1,4 @@
 //! Akamai Cloud
-// TODO: add tests
 // TODO: add to `blocking` feature
 
 use std::time::Duration;
@@ -106,5 +105,70 @@ impl Akamai {
                 false
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wiremock::matchers::{header, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_metadata_server_success() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(path(METADATA_TOKEN_PATH))
+            .and(header("Metadata-Token-Expiry-Seconds", "60"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("123abc"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                id: 123,
+                host_uuid: "123456".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Akamai;
+        let metadata_uri = mock_server.uri();
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
+
+        assert!(result);
+    }
+
+    #[tokio::test]
+    async fn test_check_metadata_server_failure() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(path(METADATA_TOKEN_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_string("123abc"))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        Mock::given(path(METADATA_PATH))
+            .respond_with(ResponseTemplate::new(200).set_body_json(MetadataResponse {
+                id: 0,
+                host_uuid: "".to_string(),
+            }))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let provider = Akamai;
+        let metadata_uri = mock_server.uri();
+        let result = provider
+            .check_metadata_server(&metadata_uri, Duration::from_secs(1))
+            .await;
+
+        assert!(!result);
     }
 }
