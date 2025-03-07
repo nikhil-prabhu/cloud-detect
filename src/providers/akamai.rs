@@ -48,7 +48,7 @@ impl Provider for Akamai {
 impl Akamai {
     #[instrument(skip_all)]
     async fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
-        let token_url = format!("{}/{}", metadata_uri, METADATA_TOKEN_PATH);
+        let token_url = format!("{}{}", metadata_uri, METADATA_TOKEN_PATH);
         debug!("Retrieving {} token from: {}", IDENTIFIER, token_url);
 
         let client = if let Ok(client) = reqwest::Client::builder().timeout(timeout).build() {
