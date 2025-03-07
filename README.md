@@ -17,6 +17,7 @@ determine the cloud provider of a host.
 ## Features
 
 * Currently, this module supports the identification of the following providers:
+    - Akamai Cloud (`akamai`)
     - Amazon Web Services (`aws`)
     - Microsoft Azure (`azure`)
     - Google Cloud Platform (`gcp`)
