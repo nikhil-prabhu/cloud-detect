@@ -16,20 +16,20 @@ all-features = true
 features = ["blocking"]
 
 [dependencies]
-anyhow = { version = "1.0.94", optional = true }
-reqwest = { version = "0.12.9", default-features = false, features = ["json", "rustls-tls"] }
-tokio = { version = "1.29.1", features = ["full"] }
-serde = { version = "1.0.188", features = ["derive"] }
-async-trait = "0.1.73"
-tracing = "0.1.40"
+anyhow = { version = "1.0.98", optional = true }
+reqwest = { version = "0.12.15", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1.44.2", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+async-trait = "0.1.88"
+tracing = "0.1.41"
 strum = { version = "0.26.3", features = ["derive"] }
 
 [dev-dependencies]
-anyhow = "1.0.94"
-tempfile = "3.14.0"
+anyhow = "1.0.98"
+tempfile = "3.19.1"
 tracing-subscriber = "0.3.19"
-wiremock = "0.6.2"
-mockito = "1.6.1"
+wiremock = "0.6.3"
+mockito = "1.7.0"
 
 [features]
 default = []
