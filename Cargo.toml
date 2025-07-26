@@ -1,6 +1,6 @@
 [package]
 name = "cloud-detect"
-version = "2.2.1"
+version = "3.0.0"
 edition = "2021"
 authors = ["Nikhil Prabhu <nikhilprabhu98@gmail.com>"]
 description = "Detect a host's cloud service provider"
