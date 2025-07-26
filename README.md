@@ -3,6 +3,7 @@
 ![maintenance-status](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 [![crates-badge](https://img.shields.io/crates/v/cloud-detect.svg)](https://crates.io/crates/cloud-detect)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/license/mit)
 [![CI](https://github.com/nikhil-prabhu/cloud-detect/actions/workflows/ci.yml/badge.svg)](https://github.com/nikhil-prabhu/cloud-detect/actions)
 [![CD](https://github.com/nikhil-prabhu/cloud-detect/actions/workflows/cd.yml/badge.svg)](https://github.com/nikhil-prabhu/cloud-detect/actions)
 
