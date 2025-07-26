@@ -14,6 +14,13 @@ and the Go-based [satellite](https://github.com/banzaicloud/satellite) modules.
 Like these modules, `cloud-detect` uses a combination of checking vendor files and metadata endpoints to accurately
 determine the cloud provider of a host.
 
+## License
+
+This crate is dual-licensed under the GPL 3.0 (see `LICENSE-GPL-3.0`) or MIT (see `LICENSE-MIT`).
+You can choose between them if you use this crate.
+
+`SPDX-License-Identifier: GPL-3.0 OR MIT`
+
 ## Features
 
 * Currently, this module supports the identification of the following providers:
