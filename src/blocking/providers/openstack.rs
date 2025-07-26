@@ -51,7 +51,7 @@ impl OpenStack {
     /// Tries to identify OpenStack via metadata server.
     #[instrument(skip_all)]
     fn check_metadata_server(&self, metadata_uri: &str, timeout: Duration) -> bool {
-        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        let url = format!("{metadata_uri}{METADATA_PATH}");
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
         let client = if let Ok(client) = Client::builder().timeout(timeout).build() {

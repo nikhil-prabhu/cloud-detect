@@ -53,7 +53,7 @@ impl Aws {
     /// Tries to identify AWS via metadata server (using IMDSv2).
     #[instrument(skip_all)]
     fn check_metadata_server_imdsv2(&self, metadata_uri: &str, timeout: Duration) -> bool {
-        let token_url = format!("{}{}", metadata_uri, METADATA_TOKEN_PATH);
+        let token_url = format!("{metadata_uri}{METADATA_TOKEN_PATH}");
         debug!("Retrieving {} IMDSv2 token from: {}", IDENTIFIER, token_url);
 
         let client = if let Ok(client) = Client::builder().timeout(timeout).build() {
@@ -84,7 +84,7 @@ impl Aws {
         }
 
         // Request to use the token to get metadata
-        let metadata_url = format!("{}{}", metadata_uri, METADATA_PATH);
+        let metadata_url = format!("{metadata_uri}{METADATA_PATH}");
         debug!(
             "Checking {} metadata using url: {}",
             IDENTIFIER, metadata_url
@@ -116,7 +116,7 @@ impl Aws {
     /// Tries to identify AWS via metadata server (using IMDSv1).
     #[instrument(skip_all)]
     fn check_metadata_server_imdsv1(&self, metadata_uri: &str, timeout: Duration) -> bool {
-        let url = format!("{}{}", metadata_uri, METADATA_PATH);
+        let url = format!("{metadata_uri}{METADATA_PATH}");
         debug!("Checking {} metadata using url: {}", IDENTIFIER, url);
 
         let client = if let Ok(client) = Client::builder().timeout(timeout).build() {
