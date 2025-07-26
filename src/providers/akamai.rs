@@ -1,5 +1,4 @@
 //! Akamai Cloud
-// TODO: add to `blocking` feature
 
 use std::time::Duration;
 
