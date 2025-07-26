@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Nikhil Prabhu <nikhilprabhu98@gmail.com>"]
 description = "Detect a host's cloud service provider"
 repository = "https://github.com/nikhil-prabhu/cloud-detect"
-license = "GPL-3.0"
+license = "GPL-3.0 OR MIT"
 documentation = "https://docs.rs/cloud-detect"
 keywords = ["cloud", "aws", "azure", "gcp", "hyperscaler"]
 
