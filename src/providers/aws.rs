@@ -72,7 +72,7 @@ impl Aws {
         };
 
         let token = match client
-            .get(token_url)
+            .put(token_url)
             .header("X-aws-ec2-metadata-token-ttl-seconds", "60")
             .send()
             .await
