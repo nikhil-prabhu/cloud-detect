@@ -17,18 +17,18 @@ determine the cloud provider of a host.
 
 ## Features
 
-* Currently, this module supports the identification of the following providers:
-    - Akamai Cloud (`akamai`)
-    - Amazon Web Services (`aws`)
-    - Microsoft Azure (`azure`)
-    - Google Cloud Platform (`gcp`)
-    - Alibaba Cloud (`alibaba`)
-    - OpenStack (`openstack`)
-    - DigitalOcean (`digitalocean`)
-    - Oracle Cloud Infrastructure (`oci`)
-    - Vultr (`vultr`)
-* Fast, simple and extensible.
-* Real-time console logging using the [`tracing`](https://crates.io/crates/tracing) crate.
+- Currently, this module supports the identification of the following providers:
+  - Akamai Cloud (`akamai`)
+  - Amazon Web Services (`aws`)
+  - Microsoft Azure (`azure`)
+  - Google Cloud Platform (`gcp`)
+  - Alibaba Cloud (`alibaba`)
+  - OpenStack (`openstack`)
+  - DigitalOcean (`digitalocean`)
+  - Oracle Cloud Infrastructure (`oci`)
+  - Vultr (`vultr`)
+- Fast, simple and extensible.
+- Real-time console logging using the [`tracing`](https://crates.io/crates/tracing) crate.
 
 ## Usage
 
@@ -37,7 +37,7 @@ First, add the library to your project by adding the following to your `Cargo.to
 ```toml
 [dependencies]
 # ...
-cloud-detect = "2"
+cloud-detect = "3"
 tokio = { version = "1", features = ["full"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging.
 ```
@@ -47,7 +47,7 @@ To use the non-async blocking API instead, enable the `blocking` feature:
 ```toml
 [dependencies]
 # ...
-cloud-detect = { version = "2", features = ["blocking"] }
+cloud-detect = { version = "3", features = ["blocking"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Optional; for logging.
 ```
 
@@ -160,33 +160,33 @@ If you encounter a bug, unexpected behavior, or have a feature request, please o
 an [issue](https://github.com/nikhil-prabhu/cloud-detect/issues/new).
 Be sure to include:
 
-* A clear description of the issue.
-* Steps to reproduce, if applicable.
-* Details about your environment.
+- A clear description of the issue.
+- Steps to reproduce, if applicable.
+- Details about your environment.
 
 ### 2. Submit Pull Requests
 
 If you're submitting a [pull request](https://github.com/nikhil-prabhu/cloud-detect/compare), please ensure the
 following.
 
-* Your code is formatted using `cargo fmt` (the Rust `nightly` channel is required, as a few unstable features are
+- Your code is formatted using `cargo fmt` (the Rust `nightly` channel is required, as a few unstable features are
   used).
 
 ```bash
-$ cargo fmt +nightly --all
-$ cargo fmt +nightly --all --check
+cargo fmt +nightly --all
+cargo fmt +nightly --all --check
 ```
 
-* Code lints pass with:
+- Code lints pass with:
 
 ```bash
-$ cargo clippy --all-targets --all-features --workspace -- -D warnings
-````
+cargo clippy --all-targets --all-features --workspace -- -D warnings
+```
 
-* Your code contains sufficient unit tests and that all tests pass.
+- Your code contains sufficient unit tests and that all tests pass.
 
 ```bash
-$ cargo test --locked --all-features --workspace
+cargo test --locked --all-features --workspace
 ```
 
 ### 3. Improve Documentation
