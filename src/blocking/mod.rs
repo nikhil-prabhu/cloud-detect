@@ -36,11 +36,13 @@
 //! Detect the cloud provider and print the result (with custom timeout).
 //!
 //! ```rust
+//! use std::time::Duration;
+//!
 //! use cloud_detect::blocking::detect;
 //!
 //! tracing_subscriber::fmt::init(); // Optional; for logging
 //!
-//! let provider = detect(Some(10)).unwrap();
+//! let provider = detect(Some(Duration::from_secs(10))).unwrap();
 //! println!("Detected provider: {:?}", provider);
 //! ```
 
@@ -125,13 +127,15 @@ pub fn supported_providers() -> Result<Vec<String>> {
 /// Detect the cloud provider and print the result (with custom timeout).
 ///
 /// ```
+/// use std::time::Duration;
+///
 /// use cloud_detect::blocking::detect;
 ///
-/// let provider = detect(Some(10)).unwrap();
+/// let provider = detect(Some(Duration::from_secs(10))).unwrap();
 /// println!("Detected provider: {:?}", provider);
 /// ```
-pub fn detect(timeout: Option<u64>) -> Result<ProviderId> {
-    let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
+pub fn detect(timeout: Option<Duration>) -> Result<ProviderId> {
+    let timeout = timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT);
     let (tx, rx) = mpsc::sync_channel::<ProviderId>(1);
     let guard = PROVIDERS
         .lock()

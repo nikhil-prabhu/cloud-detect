@@ -33,13 +33,15 @@
 //! Detect the cloud provider and print the result (with custom timeout).
 //!
 //! ```rust
+//! use std::time::Duration;
+//!
 //! use cloud_detect::detect;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     tracing_subscriber::fmt::init(); // Optional; for logging
 //!
-//!     let provider = detect(Some(10)).await;
+//!     let provider = detect(Some(Duration::from_secs(10))).await;
 //!     println!("Detected provider: {}", provider);
 //! }
 //! ```
@@ -62,7 +64,7 @@ pub mod blocking;
 pub(crate) mod providers;
 
 /// Maximum time allowed for detection.
-pub const DEFAULT_DETECTION_TIMEOUT: u64 = 5; // seconds
+pub const DEFAULT_DETECTION_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Represents an identifier for a cloud service provider.
 #[non_exhaustive]
@@ -174,17 +176,19 @@ pub async fn supported_providers() -> Vec<String> {
 /// Detect the cloud provider and print the result (with custom timeout).
 ///
 /// ```
+/// use std::time::Duration;
+///
 /// use cloud_detect::detect;
 ///
 /// #[tokio::main]
 /// async fn main() {
-///     let provider = detect(Some(10)).await;
+///     let provider = detect(Some(Duration::from_secs(10))).await;
 ///     println!("Detected provider: {}", provider);
 /// }
 /// ```
 #[instrument]
-pub async fn detect(timeout: Option<u64>) -> ProviderId {
-    let timeout = Duration::from_secs(timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT));
+pub async fn detect(timeout: Option<Duration>) -> ProviderId {
+    let timeout = timeout.unwrap_or(DEFAULT_DETECTION_TIMEOUT);
     let (tx, mut rx) = mpsc::channel::<ProviderId>(1);
     let guard = PROVIDERS.lock().await;
     let provider_entries: Vec<P> = guard.iter().cloned().collect();
